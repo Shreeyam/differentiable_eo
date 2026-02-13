@@ -144,7 +144,7 @@ def main():
         min_elevation_deg=MIN_EL,
         n_iterations=N_ITERATIONS,
         lr=1e-2,
-        revisit_weight=1,
+        revisit_weight=0.1,
         revisit_reduce=REVISIT_REDUCE,
         randomize_gmst=True,
         parameter_specs=ma_and_raan_specs(),  # MA + RAAN free, inc fixed
