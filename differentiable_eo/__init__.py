@@ -12,8 +12,10 @@ from .constraints import (
     default_parameter_specs, specs_with_altitude,
 )
 from .coordinates import (
-    gmst_at_epoch, teme_to_ecef, compute_elevation,
-    make_ground_grid, make_ground_grid_with_weights, make_gmst_array,
+    gmst_at_epoch, teme_to_ecef, teme_to_ecef_batch,
+    compute_elevation, compute_elevation_batch,
+    make_ground_grid, make_ground_grid_with_weights,
+    make_gmst_array, make_gmst_tensor,
 )
 from .coverage import (
     soft_coverage, hard_coverage, noisy_or, leaky_integrator_step, logsumexp_soft_max,

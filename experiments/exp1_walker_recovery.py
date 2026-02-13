@@ -27,7 +27,7 @@ from differentiable_eo import (
     Config, ConstellationOptimizer,
     make_constellation, make_ground_grid_with_weights, make_gmst_array,
     compute_hard_metrics, extract_elements,
-    IDX_INCLO, IDX_MO, IDX_NODEO,
+    IDX_INCLO, IDX_MO, IDX_NODEO, IDX_ARGPO,
 )
 from differentiable_eo.constraints import (
     FixedConstraint, UnboundedConstraint, BoxConstraint, alt_from_no_kozai,
@@ -45,7 +45,8 @@ def ma_and_raan_specs():
     return specs
 
 
-def evaluate_constellation(tles, tsinces, gmst_array, ground_ecef, ground_weights, min_el):
+def evaluate_constellation(tles, tsinces, gmst_array, ground_ecef, ground_weights, min_el,
+                           revisit_reduce='mean'):
     """Evaluate a constellation and return hard metrics."""
     for t in tles:
         dsgp4.initialize_tle(t, with_grad=False)
@@ -53,6 +54,7 @@ def evaluate_constellation(tles, tsinces, gmst_array, ground_ecef, ground_weight
         h_cov, h_rev = compute_hard_metrics(
             tles, tsinces, gmst_array, ground_ecef,
             min_el=min_el, ground_weights=ground_weights,
+            revisit_reduce=revisit_reduce,
         )
     return h_cov * 100, h_rev
 
@@ -88,12 +90,13 @@ def main():
     N_PLANES = 6
     N_SATS_PER_PLANE = 4
     ALT_KM = 550.0
-    N_ITERATIONS = 600
-    N_TIME_STEPS = 200
+    N_ITERATIONS = 1000
+    N_TIME_STEPS = 240
     N_LAT, N_LON = 36, 72
     LAT_BOUNDS = (-70.0, 70.0)
     MIN_EL = 10.0
     PROP_HOURS = 24.0
+    REVISIT_REDUCE = 'mean'  # 'mean' or 'max'
 
     WALKER_RAANS = [i * 360.0 / N_PLANES for i in range(N_PLANES)]
     WALKER_INC = 60.0
@@ -112,14 +115,20 @@ def main():
         alt_km=ALT_KM, phase_offset_f=WALKER_F,
     )
     walker_cov, walker_rev = evaluate_constellation(
-        walker_tles, tsinces, gmst_array, ground_ecef, ground_weights, MIN_EL)
+        walker_tles, tsinces, gmst_array, ground_ecef, ground_weights, MIN_EL,
+        revisit_reduce=REVISIT_REDUCE)
     walker_stats = extract_constellation_stats(walker_tles, N_PLANES, N_SATS_PER_PLANE)
 
     print(f"Walker 6/3/1 reference: cov={walker_cov:.2f}%, revisit={walker_rev:.1f} min")
     print(f"  Inc={walker_stats['mean_inc']:.1f} deg, MAs={[f'{m:.0f}' for m in walker_stats['mas']]}")
 
-    # ---- Suboptimal initial: correct inc but messed up RAANs ----
-    BAD_RAANS = [0.0, 10.0, 30.0, 35.0, 170.0, 180.0]  # Clustered, far from uniform
+    # ---- Suboptimal initial: correct inc but messed up RAANs + random MAs ----
+    BAD_RAANS = [0.0, 30.0, 120.0, 200.0, 210.0, 300.0]  # Clustered, far from uniform
+
+    # Random initial MAs (seeded for reproducibility)
+    rng = np.random.RandomState(42)
+    n_total = N_PLANES * N_SATS_PER_PLANE
+    BAD_MAS = (rng.uniform(0, 360, size=n_total)).tolist()
 
     config = Config(
         n_planes=N_PLANES,
@@ -127,16 +136,19 @@ def main():
         target_alt_km=ALT_KM,
         initial_inc_deg=WALKER_INC,  # Inc fixed at 60 deg
         initial_raan_offsets_deg=BAD_RAANS,  # Badly spaced RAANs
+        initial_ma_offsets_deg=BAD_MAS,  # Random MAs
         prop_duration_hours=PROP_HOURS,
         n_time_steps=N_TIME_STEPS,
         n_lat=N_LAT, n_lon=N_LON,
         lat_bounds_deg=LAT_BOUNDS,
         min_elevation_deg=MIN_EL,
         n_iterations=N_ITERATIONS,
-        lr=5e-3,
-        revisit_weight=0.005,
-        randomize_gmst=False,
+        lr=1e-2,
+        revisit_weight=1,
+        revisit_reduce=REVISIT_REDUCE,
+        randomize_gmst=True,
         parameter_specs=ma_and_raan_specs(),  # MA + RAAN free, inc fixed
+        per_plane_params=[IDX_NODEO],  # RAAN shared within each plane
     )
 
     # ---- Run optimization, recording snapshots for animation ----
@@ -145,6 +157,15 @@ def main():
     # Collect (RAAN, MA) snapshots every few iterations
     snapshots = []  # list of (iteration, [(raan_deg, ma_deg), ...])
     SNAPSHOT_EVERY = 5
+
+    # Record initial state before any optimization
+    init_elems = opt.get_current_elements()
+    init_positions = []
+    for e in init_elems:
+        raan = math.degrees(e[8].item()) % 360
+        ma = math.degrees(e[6].item()) % 360
+        init_positions.append((raan, ma))
+    snapshots.append((-1, init_positions))
 
     def record_snapshot(iteration, step_result, optimizer_obj):
         if iteration % SNAPSHOT_EVERY == 0 or iteration == N_ITERATIONS - 1:
@@ -163,9 +184,11 @@ def main():
     final_stats = extract_constellation_stats(result.final_tles, N_PLANES, N_SATS_PER_PLANE)
 
     init_cov, init_rev = evaluate_constellation(
-        result.initial_tles, tsinces, gmst_array, ground_ecef, ground_weights, MIN_EL)
+        result.initial_tles, tsinces, gmst_array, ground_ecef, ground_weights, MIN_EL,
+        revisit_reduce=REVISIT_REDUCE)
     final_cov, final_rev = evaluate_constellation(
-        result.final_tles, tsinces, gmst_array, ground_ecef, ground_weights, MIN_EL)
+        result.final_tles, tsinces, gmst_array, ground_ecef, ground_weights, MIN_EL,
+        revisit_reduce=REVISIT_REDUCE)
 
     # ---- Print comparison table ----
     print("\n" + "=" * 72)
@@ -373,13 +396,35 @@ def main():
             ax3d.plot(ring_x, ring_y, ring_z, '-',
                      color=colors_planes[p], alpha=0.25, lw=0.8)
 
-        # Satellite positions
+        # Satellite positions — differentiate near vs far side of Earth
         xs, ys, zs = snapshot_to_xyz(elems_rad)
+
+        # Camera direction (from origin toward camera) for elev=25, azim=45
+        azim_rad = math.radians(45)
+        elev_rad = math.radians(25)
+        cam_dir = np.array([math.cos(elev_rad) * math.cos(azim_rad),
+                            math.cos(elev_rad) * math.sin(azim_rad),
+                            math.sin(elev_rad)])
+
         for i in range(n_sats):
             plane_idx = i // N_SATS_PER_PLANE
-            ax3d.scatter([xs[i]], [ys[i]], [zs[i]], s=50,
-                        color=colors_planes[plane_idx],
-                        edgecolors='k', linewidths=0.5, zorder=5, depthshade=False)
+            pos = np.array([xs[i], ys[i], zs[i]])
+            along = np.dot(pos, cam_dir)  # projection along view axis
+            perp = np.linalg.norm(pos - along * cam_dir)  # perpendicular distance
+            occluded = along < 0 and perp < R_EARTH
+
+            if occluded:
+                # Behind Earth: hollow marker with dashed edge
+                ax3d.scatter([xs[i]], [ys[i]], [zs[i]], s=50,
+                            facecolors='none',
+                            edgecolors=colors_planes[plane_idx],
+                            linewidths=1.2, zorder=2, depthshade=False,
+                            alpha=0.5)
+            else:
+                # Near side: filled marker
+                ax3d.scatter([xs[i]], [ys[i]], [zs[i]], s=50,
+                            color=colors_planes[plane_idx],
+                            edgecolors='k', linewidths=0.5, zorder=5, depthshade=False)
 
         # Movement arrows from previous frame
         if frame_idx > 0:
@@ -426,6 +471,137 @@ def main():
     anim.save(anim_path, writer=PillowWriter(fps=20))
     print(f"Animation saved to {anim_path}")
     plt.close(fig_anim)
+
+    # ---- Helper: break line segments at 360/0 wrapping ----
+    def break_at_wraps(xs, ys):
+        """Insert NaN in both arrays at 360/0 discontinuities in either."""
+        ox, oy = [xs[0]], [ys[0]]
+        for i in range(1, len(xs)):
+            if abs(xs[i] - xs[i - 1]) > 180 or abs(ys[i] - ys[i - 1]) > 180:
+                ox.append(np.nan)
+                oy.append(np.nan)
+            ox.append(xs[i])
+            oy.append(ys[i])
+        return ox, oy
+
+    # ---- 2D Animation: RAAN vs MA with loss ----
+    print("\nGenerating 2D RAAN-MA animation...")
+
+    # Compute Walker reference positions (RAAN, MA) in degrees
+    walker_positions = []
+    for p in range(N_PLANES):
+        raan_w = WALKER_RAANS[p]
+        for s in range(N_SATS_PER_PLANE):
+            ma_w = (360.0 * s / N_SATS_PER_PLANE
+                    + WALKER_F * (360.0 / (N_PLANES * N_SATS_PER_PLANE)) * p) % 360
+            walker_positions.append((raan_w, ma_w))
+
+    fig_2d = plt.figure(figsize=(14, 6))
+    ax_rm = fig_2d.add_subplot(121)
+    ax_l2 = fig_2d.add_subplot(122)
+
+    def draw_2d_frame(frame_idx):
+        ax_rm.cla()
+        ax_l2.cla()
+
+        iteration, positions = snapshots[frame_idx]
+
+        # Vertical RAAN lines for current plane RAANs
+        for p in range(N_PLANES):
+            lead_raan = positions[p * N_SATS_PER_PLANE][0]
+            ax_rm.axvline(lead_raan, color=colors_planes[p], alpha=0.15, lw=6)
+
+        # Trajectory trails (faded, with wrapping handled)
+        for s_idx in range(n_sats):
+            plane_idx = s_idx // N_SATS_PER_PLANE
+            trail_raans = [snapshots[f][1][s_idx][0] for f in range(frame_idx + 1)]
+            trail_mas = [snapshots[f][1][s_idx][1] for f in range(frame_idx + 1)]
+            bx, by = break_at_wraps(trail_raans, trail_mas)
+            ax_rm.plot(bx, by, '-', color=colors_planes[plane_idx], alpha=0.25, lw=1)
+
+        # Current positions
+        for s_idx in range(n_sats):
+            plane_idx = s_idx // N_SATS_PER_PLANE
+            raan_d, ma_d = positions[s_idx]
+            ax_rm.scatter([raan_d], [ma_d], s=50, color=colors_planes[plane_idx],
+                         edgecolors='k', linewidths=0.5, zorder=5)
+
+        # Walker reference (star markers)
+        for s_idx, (wr, wm) in enumerate(walker_positions):
+            plane_idx = s_idx // N_SATS_PER_PLANE
+            ax_rm.scatter([wr], [wm], s=100, marker='*', color=colors_planes[plane_idx],
+                         edgecolors='k', linewidths=0.3, zorder=4, alpha=0.6)
+
+        ax_rm.set_xlim(-5, 365)
+        ax_rm.set_ylim(-5, 365)
+        ax_rm.set_xlabel('RAAN (deg)')
+        ax_rm.set_ylabel('Mean Anomaly (deg)')
+        ax_rm.set_title(f'RAAN vs MA — Iteration {iteration}')
+        ax_rm.grid(True, alpha=0.2)
+
+        # Loss curve
+        ax_l2.set_xlim(0, N_ITERATIONS)
+        ax_l2.set_ylim(min(all_losses) - 0.05, max(all_losses) + 0.05)
+        ax_l2.set_xlabel('Iteration')
+        ax_l2.set_ylabel('Loss')
+        ax_l2.set_title('Optimization Loss')
+        ax_l2.grid(True, alpha=0.3)
+        loss_idx = max(0, iteration)
+        ax_l2.plot(range(loss_idx + 1), all_losses[:loss_idx + 1], 'k-', lw=2)
+        if loss_idx < len(all_losses):
+            ax_l2.plot(loss_idx, all_losses[loss_idx], 'ro', markersize=6)
+
+    anim_2d = FuncAnimation(fig_2d, draw_2d_frame,
+                            frames=len(snapshots), interval=100, blit=False)
+    anim_2d_path = os.path.join(os.path.dirname(__file__), 'exp1_raan_ma_animation.gif')
+    anim_2d.save(anim_2d_path, writer=PillowWriter(fps=20))
+    print(f"2D animation saved to {anim_2d_path}")
+    plt.close(fig_2d)
+
+    # ---- Still: RAAN vs MA with full trajectories ----
+    print("Generating RAAN-MA trajectory still...")
+    fig_still, ax_still = plt.subplots(figsize=(8, 7))
+
+    # Vertical RAAN lines for final plane positions
+    final_positions = snapshots[-1][1]
+    for p in range(N_PLANES):
+        lead_raan = final_positions[p * N_SATS_PER_PLANE][0]
+        ax_still.axvline(lead_raan, color=colors_planes[p], alpha=0.12, lw=6)
+
+    # Full trajectories (with wrapping handled)
+    for s_idx in range(n_sats):
+        plane_idx = s_idx // N_SATS_PER_PLANE
+        trail_raans = [snap[1][s_idx][0] for snap in snapshots]
+        trail_mas = [snap[1][s_idx][1] for snap in snapshots]
+        bx, by = break_at_wraps(trail_raans, trail_mas)
+        ax_still.plot(bx, by, '-', color=colors_planes[plane_idx], alpha=0.35, lw=1.2)
+        # Start marker (hollow)
+        ax_still.scatter([trail_raans[0]], [trail_mas[0]], s=40, facecolors='none',
+                        edgecolors=colors_planes[plane_idx], linewidths=1, zorder=4)
+        # End marker (filled)
+        ax_still.scatter([trail_raans[-1]], [trail_mas[-1]], s=50,
+                        color=colors_planes[plane_idx],
+                        edgecolors='k', linewidths=0.5, zorder=5)
+
+    # Walker reference
+    for s_idx, (wr, wm) in enumerate(walker_positions):
+        plane_idx = s_idx // N_SATS_PER_PLANE
+        lbl = 'Walker 6/3/1' if s_idx == 0 else None
+        ax_still.scatter([wr], [wm], s=120, marker='*', color=colors_planes[plane_idx],
+                        edgecolors='k', linewidths=0.3, zorder=6, alpha=0.7, label=lbl)
+
+    ax_still.set_xlim(-5, 365)
+    ax_still.set_ylim(-5, 365)
+    ax_still.set_xlabel('RAAN (deg)')
+    ax_still.set_ylabel('Mean Anomaly (deg)')
+    ax_still.set_title('Optimization Trajectories in RAAN-MA Space')
+    ax_still.legend(fontsize=9, loc='upper right')
+    ax_still.grid(True, alpha=0.2)
+
+    still_path = os.path.join(os.path.dirname(__file__), 'exp1_raan_ma_trajectories.png')
+    fig_still.savefig(still_path, dpi=150, bbox_inches='tight')
+    print(f"Trajectory still saved to {still_path}")
+    plt.close(fig_still)
 
 
 if __name__ == '__main__':

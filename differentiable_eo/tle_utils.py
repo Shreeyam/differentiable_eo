@@ -66,20 +66,28 @@ def update_tle_from_elements(tle, elements: torch.Tensor):
 def make_constellation(n_planes: int, n_sats_per_plane: int, inc_deg: float,
                        raan_offsets_deg: list, alt_km: float,
                        ecc: float = 0.001, bstar: float = 1e-5,
-                       phase_offset_f: int = 0) -> list:
+                       phase_offset_f: int = 0,
+                       ma_offsets_deg: list = None) -> list:
     """
     Create a list of TLEs for a Walker-like constellation.
 
     Walker T/P/F convention: satellite s in plane p gets
         MA = 2*pi*s/S + F * (2*pi/T) * p
     where S = sats_per_plane, T = total sats. F=0 gives no inter-plane offset.
+
+    If ma_offsets_deg is provided, it should be a flat list of length
+    n_planes * n_sats_per_plane giving each satellite's MA in degrees,
+    overriding the Walker formula.
     """
     total_sats = n_planes * n_sats_per_plane
     tles = []
     for p in range(n_planes):
         raan = math.radians(raan_offsets_deg[p])
         for s in range(n_sats_per_plane):
-            ma = 2 * math.pi * s / n_sats_per_plane + phase_offset_f * (2 * math.pi / total_sats) * p
+            if ma_offsets_deg is not None:
+                ma = math.radians(ma_offsets_deg[p * n_sats_per_plane + s])
+            else:
+                ma = 2 * math.pi * s / n_sats_per_plane + phase_offset_f * (2 * math.pi / total_sats) * p
             tles.append(make_tle(
                 inc_rad=math.radians(inc_deg),
                 raan_rad=raan, ma_rad=ma,

@@ -49,23 +49,28 @@ class ConstellationOptimizer:
         self.ground_ecef, self.ground_weights = make_ground_grid_with_weights(
             cfg.n_lat, cfg.n_lon, cfg.lat_bounds_deg)
         self.n_ground = self.ground_ecef.shape[0]
+        # Precompute ground unit vectors (avoids recomputation every elevation call)
+        self.ground_unit = self.ground_ecef / torch.norm(self.ground_ecef, dim=-1, keepdim=True)
 
-        # Time array
+        # Time array and GMST (precompute as tensor)
         prop_min = cfg.prop_duration_hours * 60
         self.tsinces = torch.linspace(0, prop_min, cfg.n_time_steps)
         self.gmst_array = make_gmst_array(self.tsinces)
+        self.gmst_tensor = torch.tensor(self.gmst_array, dtype=torch.float64)
 
         # Create initial constellation
         self.tles = make_constellation(
             cfg.n_planes, cfg.n_sats_per_plane,
             cfg.initial_inc_deg, cfg.initial_raan_offsets_deg,
             cfg.target_alt_km,
+            ma_offsets_deg=cfg.initial_ma_offsets_deg,
         )
         # Save a separate copy for comparison
         self.initial_tles = make_constellation(
             cfg.n_planes, cfg.n_sats_per_plane,
             cfg.initial_inc_deg, cfg.initial_raan_offsets_deg,
             cfg.target_alt_km,
+            ma_offsets_deg=cfg.initial_ma_offsets_deg,
         )
 
         # Initialize TLEs to get internal element values
@@ -83,6 +88,53 @@ class ConstellationOptimizer:
         z_params = [re.optimizer_param for re in self.reparam_elements if re.n_free > 0]
         self.optimizer = torch.optim.AdamW(z_params, lr=cfg.lr)
 
+    def _find_z_index(self, reparam, elem_idx):
+        """Find the position of element elem_idx within a reparam's z-tensor."""
+        try:
+            return reparam.free_indices.index(elem_idx)
+        except ValueError:
+            return None
+
+    def _accumulate_per_plane_grads(self):
+        """Average gradients for shared per-plane params into lead sat; zero followers."""
+        cfg = self.config
+        if not cfg.per_plane_params:
+            return
+        for param_idx in cfg.per_plane_params:
+            for p in range(cfg.n_planes):
+                lead = self.reparam_elements[p * cfg.n_sats_per_plane]
+                z_pos = self._find_z_index(lead, param_idx)
+                if z_pos is None or lead._z.grad is None:
+                    continue
+                total = lead._z.grad[z_pos].clone()
+                count = 1
+                for s in range(1, cfg.n_sats_per_plane):
+                    follower = self.reparam_elements[p * cfg.n_sats_per_plane + s]
+                    fz = self._find_z_index(follower, param_idx)
+                    if fz is not None and follower._z.grad is not None:
+                        total += follower._z.grad[fz]
+                        count += 1
+                        follower._z.grad[fz] = 0.0
+                lead._z.grad[z_pos] = total / count
+
+    def _sync_per_plane_params(self):
+        """Copy lead satellite's z-values to followers for shared params."""
+        cfg = self.config
+        if not cfg.per_plane_params:
+            return
+        for param_idx in cfg.per_plane_params:
+            for p in range(cfg.n_planes):
+                lead = self.reparam_elements[p * cfg.n_sats_per_plane]
+                z_pos = self._find_z_index(lead, param_idx)
+                if z_pos is None:
+                    continue
+                lead_val = lead._z.data[z_pos].item()
+                for s in range(1, cfg.n_sats_per_plane):
+                    follower = self.reparam_elements[p * cfg.n_sats_per_plane + s]
+                    fz = self._find_z_index(follower, param_idx)
+                    if fz is not None:
+                        follower._z.data[fz] = lead_val
+
     def step(self) -> dict:
         """
         Execute one optimization step.
@@ -95,27 +147,26 @@ class ConstellationOptimizer:
         # Optionally randomize Earth orientation to avoid systematic bias
         if cfg.randomize_gmst:
             gmst_offset = torch.rand(1).item() * 2 * math.pi
-            gmst_array = [g + gmst_offset for g in self.gmst_array]
+            gmst_tensor = self.gmst_tensor + gmst_offset
         else:
-            gmst_array = self.gmst_array
+            gmst_tensor = self.gmst_tensor
 
         # 1. Map z -> elements -> write to TLEs -> initialize for autograd
         tle_elements_list = []
         for i, tle in enumerate(self.tles):
             elements = self.reparam_elements[i].to_elements()
             update_tle_from_elements(tle, elements)
-
-        for tle in self.tles:
             tle_elements_list.append(dsgp4.initialize_tle(tle, with_grad=True))
 
         # 2. Forward pass
         loss, cov_frac, mean_revisit = compute_loss(
-            self.tles, self.tsinces, gmst_array, self.ground_ecef,
+            self.tles, self.tsinces, gmst_tensor, self.ground_ecef,
             min_el=cfg.min_elevation_deg, softness=cfg.softness_deg,
             revisit_tau=cfg.revisit_logsumexp_temp, revisit_weight=cfg.revisit_weight,
             ground_weights=self.ground_weights,
             revisit_reduce=cfg.revisit_reduce,
             revisit_spatial_tau=cfg.revisit_spatial_tau,
+            ground_unit=self.ground_unit,
         )
 
         # 3. Backward through dsgp4's ephemeral graph
@@ -127,8 +178,14 @@ class ConstellationOptimizer:
             if ephemeral_grad is not None:
                 self.reparam_elements[i].compute_z_grad(ephemeral_grad)
 
+        # 4b. Accumulate gradients for per-plane shared parameters
+        self._accumulate_per_plane_grads()
+
         # 5. Adam step on z-parameters
         self.optimizer.step()
+
+        # 5b. Sync per-plane shared z-values from lead satellite to followers
+        self._sync_per_plane_params()
 
         return {
             'loss': loss.item(),
@@ -147,10 +204,11 @@ class ConstellationOptimizer:
 
         with torch.no_grad():
             h_cov, h_rev = compute_hard_metrics(
-                self.tles, self.tsinces, self.gmst_array, self.ground_ecef,
+                self.tles, self.tsinces, self.gmst_tensor, self.ground_ecef,
                 min_el=self.config.min_elevation_deg,
                 ground_weights=self.ground_weights,
                 revisit_reduce=self.config.revisit_reduce,
+                ground_unit=self.ground_unit,
             )
         return {'hard_coverage_pct': h_cov * 100, 'hard_revisit_min': h_rev}
 
@@ -211,12 +269,13 @@ class ConstellationOptimizer:
             dsgp4.initialize_tle(tle, with_grad=False)
         with torch.no_grad():
             _, init_cov, init_rev = compute_loss(
-                self.tles, self.tsinces, self.gmst_array, self.ground_ecef,
+                self.tles, self.tsinces, self.gmst_tensor, self.ground_ecef,
                 cfg.min_elevation_deg, cfg.softness_deg,
                 cfg.revisit_logsumexp_temp, cfg.revisit_weight,
                 ground_weights=self.ground_weights,
                 revisit_reduce=cfg.revisit_reduce,
                 revisit_spatial_tau=cfg.revisit_spatial_tau,
+                ground_unit=self.ground_unit,
             )
         print(f"\nInitial coverage: {init_cov.item()*100:.2f}%")
         print(f"Initial revisit:  {init_rev.item():.1f} min")

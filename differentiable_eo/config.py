@@ -16,6 +16,7 @@ class Config:
     # Initial (deliberately suboptimal) configuration
     initial_inc_deg: float = 30.0
     initial_raan_offsets_deg: Optional[list] = None
+    initial_ma_offsets_deg: Optional[list] = None  # flat list of MAs per sat; None = even spacing
 
     # Propagation
     prop_duration_hours: float = 24.0
@@ -42,6 +43,8 @@ class Config:
     randomize_gmst: bool = True
     # Constraint specs (which elements are free/bounded)
     parameter_specs: dict = field(default_factory=default_parameter_specs)
+    # Element indices shared per plane (e.g. [IDX_NODEO] for shared RAAN)
+    per_plane_params: list = field(default_factory=list)
 
     def __post_init__(self):
         if self.initial_raan_offsets_deg is None:
