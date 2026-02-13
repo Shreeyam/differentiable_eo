@@ -1,0 +1,29 @@
+\section{Related Work}
+\label{sec:related_work}
+
+\subsection{Constellation Design and Optimization}
+
+The constellation design problem has a long history.
+\citet{walker1984satellite} introduced the Walker-delta pattern, parameterizing symmetric constellations by total satellites, number of planes, and a phasing parameter; this remains the most widely used family for uniform-coverage constellations.
+\citet{mortari2004flower} generalized this with Flower constellations, which exploit compatible orbits to produce repeating ground tracks.
+These parametric approaches are efficient but inherently symmetric: they cannot be tailored to non-uniform, mission-specific coverage requirements.
+
+For general (non-parametric) constellation design, the literature has primarily relied on metaheuristic methods.
+\citet{paek2019recon} optimized reconfigurable constellations (ReCon) for both global coverage and regional target revisit using simulated annealing (SA) and genetic algorithms (GA), formulating a multi-objective problem over five design variables including altitude, number of planes, satellites per plane, and field of regard.
+Their SA required $\sim$250 iterations and GA required $\sim$50 generations with population size 50 ($\sim$2500 total evaluations), each involving expensive STK orbit simulations.
+Critically, they also attempted gradient-based optimization using finite-difference approximations and found it ``extremely poorly conditioned,'' with convergence rarely achieved even from good initial points.
+Other metaheuristic approaches include \citet{howell2006satellite} and \citet{lee2020satellite}; \citet{lang2024constellation} provide a comprehensive review and identify computational cost as the primary bottleneck.
+
+Our work differs in two key respects.
+First, we use \emph{true analytical gradients} through a differentiable propagator rather than finite-difference approximations through a black-box simulator, eliminating the poor conditioning that plagued prior gradient-based attempts.
+Second, we make the coverage and revisit objectives themselves differentiable via continuous relaxations, rather than treating them as discrete metrics evaluated post-propagation.
+
+\subsection{Differentiable Physics and Simulation}
+
+Differentiable programming~\citep{baydin2018automatic} has transformed optimization in domains where the forward model is complex but smooth.
+\citet{hu2020difftaichi} demonstrated differentiable physical simulators for robotics and fluid dynamics, and \citet{degrave2019differentiable} applied differentiable physics engines to contact-rich manipulation.
+In the continuous-relaxation space, the Gumbel-Softmax trick~\citep{jang2017categorical} showed how to make discrete categorical choices differentiable, enabling gradient-based optimization of architectures and discrete structures.
+
+In astrodynamics, \citet{acciarini2024dsgp4} introduced dSGP4, a PyTorch reimplementation of the SGP4/SDP4 orbit propagator in which every operation uses differentiable tensors.
+They demonstrated gradient computation for state transition matrices and TLE fitting via Newton's method, but did not apply the framework to constellation-level coverage optimization.
+Our work builds on dSGP4 by introducing the missing piece: differentiable coverage and revisit objectives that close the loop from orbital elements to mission performance metrics.

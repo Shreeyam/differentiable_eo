@@ -1,0 +1,83 @@
+\begin{tikzpicture}
+\begin{groupplot}[
+    group style={
+        group size=4 by 1,
+        horizontal sep=1.4cm,
+    },
+    width=4.2cm, height=3.5cm,
+    grid=major,
+    grid style={gray!20},
+    tick label style={font=\scriptsize},
+    label style={font=\small},
+    title style={font=\small\bfseries, yshift=-2pt},
+]
+
+% (a) Soft sigmoid
+\nextgroupplot[
+    title={(a) Soft Visibility},
+    xlabel={$\alpha - \alpha_{\min}$ [\si{\degree}]},
+    ylabel={$c_{ij}$},
+    xmin=-15, xmax=15,
+    ymin=-0.05, ymax=1.1,
+    domain=-15:15,
+    samples=100,
+]
+% Hard step
+\addplot[blue, very thick, dashed] coordinates {(-15,0) (0,0) (0,1) (15,1)};
+% Soft sigmoid tau=2
+\addplot[red, very thick] {1/(1+exp(-x/2))};
+\node[font=\scriptsize] at (axis cs:7,0.3) {$\tau=2$};
+
+% (b) Noisy-OR
+\nextgroupplot[
+    title={(b) Noisy-OR},
+    xlabel={$c_1$},
+    ylabel={$C = 1 - (1-c_1)(1-c_2)$},
+    xmin=0, xmax=1,
+    ymin=-0.05, ymax=1.1,
+    domain=0:1,
+    samples=50,
+]
+\addplot[red, very thick] {1-(1-x)*(1-0.0)};
+\addplot[orange, very thick] {1-(1-x)*(1-0.3)};
+\addplot[purple, very thick] {1-(1-x)*(1-0.7)};
+\node[font=\scriptsize, anchor=west] at (axis cs:0.05,0.15) {$c_2\!=\!0$};
+\node[font=\scriptsize, anchor=west] at (axis cs:0.05,0.42) {$c_2\!=\!0.3$};
+\node[font=\scriptsize, anchor=west] at (axis cs:0.05,0.78) {$c_2\!=\!0.7$};
+
+% (c) Leaky integrator
+\nextgroupplot[
+    title={(c) Leaky Integrator},
+    xlabel={Time step},
+    ylabel={Gap $\Delta_j$ (min)},
+    xmin=0, xmax=20,
+    ymin=-5, ymax=85,
+]
+% Simulated gap signal: grows linearly, resets at coverage events
+\addplot[red, very thick] coordinates {
+    (0,0) (1,7) (2,14) (3,21) (4,28) (5,35)
+    (6,0) (7,7) (8,14) (9,21) (10,28) (11,35) (12,42)
+    (13,0) (14,7) (15,14) (16,21) (17,28) (18,35) (19,42) (20,49)
+};
+% Coverage events
+\addplot[blue, only marks, mark=triangle*, mark size=2.5pt] coordinates {(6,0) (13,0)};
+\node[font=\scriptsize, blue] at (axis cs:9.5,65) {coverage};
+
+% (d) LogSumExp
+\nextgroupplot[
+    title={(d) LogSumExp Soft-Max},
+    xlabel={Temperature $\tau_r$},
+    ylabel={$\widetilde{\Delta}^{\max}$},
+    xmin=0.5, xmax=50,
+    ymin=40, ymax=110,
+    domain=1:50,
+    samples=50,
+]
+% For values [20, 45, 30], true max = 45
+\addplot[red, very thick] {x * ln(exp(20/x) + exp(45/x) + exp(30/x))};
+\addplot[blue, very thick, dashed] coordinates {(0.5,45) (50,45)};
+\node[font=\scriptsize, blue] at (axis cs:35,42) {true max};
+\node[font=\scriptsize, red, anchor=west] at (axis cs:25,85) {LSE};
+
+\end{groupplot}
+\end{tikzpicture}

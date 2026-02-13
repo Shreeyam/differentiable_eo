@@ -1,0 +1,163 @@
+\section{Method}
+\label{sec:method}
+
+\subsection{Problem Setup}
+\label{sec:setup}
+
+Consider a constellation of $N$ satellites, each parameterized by a two-line element (TLE) set.
+For constellation geometry optimization at a fixed altitude, the free parameters per satellite are the inclination $\iota$, right ascension of the ascending node $\Omega$, and mean anomaly $\mathcal{M}$.
+We fix the remaining TLE parameters (mean motion $n$, eccentricity $e \approx 0$, drag term $B^*$, and secular rates $\dot{n}$, $\ddot{n}$).
+
+Given a grid of $M$ ground target points $\mathcal{G} = \{\vect{g}_1, \ldots, \vect{g}_M\}$ on the Earth's surface and a time horizon $[0, T]$ discretized into $K$ steps with spacing $\delta t = T/(K-1)$, we seek to maximize coverage and minimize the worst-case revisit gap.
+
+\paragraph{Propagation.}
+Each satellite's TLE elements are propagated through dSGP4~\citep{acciarini2024dsgp4} to produce position vectors $\vect{r}_i(t_k)$ in the True Equator Mean Equinox (TEME) reference frame.
+These are rotated to the Earth-Centered Earth-Fixed (ECEF) frame via the Greenwich Mean Sidereal Time angle $\theta_{\text{GMST}}(t_k)$:
+\begin{equation}
+    \vect{r}_i^{\text{ECEF}}(t_k) = \mat{R}_z\bigl(\theta_{\text{GMST}}(t_k)\bigr) \, \vect{r}_i^{\text{TEME}}(t_k),
+    \label{eq:teme_to_ecef}
+\end{equation}
+where $\mat{R}_z(\theta)$ is the standard rotation matrix about the $z$-axis.
+This single-axis rotation is an approximation: the full TEME-to-ECEF transformation requires accounting for precession, nutation, and polar motion~\citep{vallado2006revisiting}.
+For the \SI{24}{\hour} propagation horizons considered here, the precession-induced error is on the order of arcseconds, corresponding to sub-kilometre position offsets---negligible relative to the $\sim$\SI{2200}{\kilo\metre} ground footprint of a satellite at \SI{550}{\kilo\metre} altitude with \SI{10}{\degree} minimum elevation.
+For longer horizons or higher-precision applications, the full IAU-2000/2006 transformation should be used.
+
+\paragraph{Elevation angle.}
+The elevation angle from ground point $\vect{g}_j$ to satellite $i$ at time $t_k$ is
+\begin{equation}
+    \alpha_{ij}(t_k) = \arcsin\left(\frac{(\vect{r}_i^{\text{ECEF}}(t_k) - \vect{g}_j) \cdot \hat{\vect{g}}_j}{\|\vect{r}_i^{\text{ECEF}}(t_k) - \vect{g}_j\|}\right),
+    \label{eq:elevation}
+\end{equation}
+where $\hat{\vect{g}}_j = \vect{g}_j / \|\vect{g}_j\|$ is the local vertical unit vector at the ground point.
+A satellite is conventionally visible when $\alpha_{ij} \geq \alpha_{\min}$, with $\alpha_{\min} = \SI{10}{\degree}$.
+
+The challenge is that the visibility indicator $\mathbf{1}[\alpha_{ij}(t_k) \geq \alpha_{\min}]$, the Boolean OR over satellites, the revisit gap computation, and the worst-case maximum are all non-differentiable.
+We address each in turn.
+
+\subsection{Relaxation 1: Soft Visibility}
+\label{sec:soft_visibility}
+
+We replace the hard step function with a sigmoid (\figref{fig:relaxations}a):
+\begin{equation}
+    c_{ij}(t_k) = \sigma\!\left(\frac{\alpha_{ij}(t_k) - \alpha_{\min}}{\tau}\right), \quad \sigma(x) = \frac{1}{1 + e^{-x}},
+    \label{eq:soft_visibility}
+\end{equation}
+where $\tau > 0$ controls the sharpness.
+As $\tau \to 0$ this recovers the hard indicator; we use $\tau = \SI{2}{\degree}$, which provides a smooth transition zone of approximately $\pm\SI{6}{\degree}$ around the threshold while keeping the approximation tight.
+This is analogous to the temperature-scaled softmax used in Gumbel-Softmax relaxations of discrete variables~\citep{jang2017categorical}.
+
+\subsection{Relaxation 2: Noisy-OR Coverage Aggregation}
+\label{sec:noisy_or}
+
+For a ground point $\vect{g}_j$ at time $t_k$, we need to determine whether \emph{any} satellite provides coverage---a Boolean OR.
+Treating each $c_{ij}(t_k)$ as an independent detection probability, the noisy-OR~\citep{pearl1988probabilistic} gives (\figref{fig:relaxations}b):
+\begin{equation}
+    C_j(t_k) = 1 - \prod_{i=1}^{N} \bigl(1 - c_{ij}(t_k)\bigr).
+    \label{eq:noisy_or}
+\end{equation}
+This is smooth, monotonically increasing in each $c_{ij}$, and recovers the hard OR when all inputs are in $\{0, 1\}$.
+It also naturally handles overlapping coverage: adding a satellite that already covers a point produces diminishing marginal gain, preventing the optimizer from clustering satellites.
+
+The \emph{coverage fraction} over the full space-time grid is
+\begin{equation}
+    \bar{C} = \frac{1}{KM} \sum_{k=1}^{K} \sum_{j=1}^{M} C_j(t_k).
+    \label{eq:coverage_fraction}
+\end{equation}
+
+\subsection{Relaxation 3: Leaky Integrator for Revisit Gaps}
+\label{sec:leaky_integrator}
+
+The revisit gap at a ground point is the time elapsed since the last coverage event.
+Computing this requires identifying discrete transitions, which is non-differentiable.
+We approximate it with a leaky integrator recurrence~\citep{gerstner2002spiking} (\figref{fig:relaxations}c):
+\begin{equation}
+    \Delta_j(t_k) = \bigl(\Delta_j(t_{k-1}) + \delta t\bigr) \cdot \bigl(1 - C_j(t_k)\bigr), \quad \Delta_j(t_0) = 0.
+    \label{eq:leaky_integrator}
+\end{equation}
+When the point is covered ($C_j \approx 1$), the accumulated gap is multiplied by $\approx 0$, resetting it.
+When the point is not covered ($C_j \approx 0$), the gap grows by $\delta t$.
+This recurrence is fully differentiable and its maximum over time approximates the true worst-case revisit gap at each ground point.
+
+\subsection{Relaxation 4: LogSumExp Soft-Maximum}
+\label{sec:logsumexp}
+
+The worst-case revisit gap at ground point $\vect{g}_j$ is $\max_k \Delta_j(t_k)$, which has zero gradients almost everywhere.
+We replace it with the LogSumExp smooth maximum~\citep{boyd2004convex} (\figref{fig:relaxations}d):
+\begin{equation}
+    \widetilde{\Delta}_j^{\max} = \tau_r \cdot \log\!\left(\sum_{k=1}^{K} \exp\!\left(\frac{\Delta_j(t_k)}{\tau_r}\right)\right),
+    \label{eq:logsumexp}
+\end{equation}
+where $\tau_r = \SI{30}{\minute}$.
+This satisfies $\max_k \Delta_j(t_k) \leq \widetilde{\Delta}_j^{\max} \leq \max_k \Delta_j(t_k) + \tau_r \log K$, providing a controllable upper bound.
+The mean worst-case revisit across all ground points is
+\begin{equation}
+    \bar{\Delta}^{\max} = \frac{1}{M} \sum_{j=1}^{M} \widetilde{\Delta}_j^{\max}.
+    \label{eq:mean_revisit}
+\end{equation}
+
+\begin{figure}[t]
+    \centering
+    \input{figures/relaxations}
+    \caption{The four continuous relaxations.  \textbf{(a)} Soft sigmoid replaces the hard visibility threshold.  \textbf{(b)} Noisy-OR aggregates coverage across satellites.  \textbf{(c)} Leaky integrator tracks the revisit gap as a differentiable recurrence.  \textbf{(d)} LogSumExp approximates the worst-case (maximum) revisit gap.}
+    \label{fig:relaxations}
+\end{figure}
+
+\subsection{Combined Objective}
+\label{sec:objective}
+
+The total loss combines coverage maximization with revisit minimization:
+\begin{equation}
+    \mathcal{L}(\vect{x}) = -\bar{C} + \lambda \, \bar{\Delta}^{\max},
+    \label{eq:loss}
+\end{equation}
+where $\vect{x} = \{\iota_i, \Omega_i, \mathcal{M}_i\}_{i=1}^{N}$ collects all free orbital parameters and $\lambda$ is a weighting coefficient.
+For non-uniform objectives, the sums over ground points can be replaced with weighted sums over a discrete target set (\secref{sec:weighted}).
+
+\subsection{Tightness of the Composed Relaxation}
+\label{sec:tightness}
+
+Each of the four relaxations is individually tight: the soft sigmoid recovers the hard step as $\tau \to 0$; the noisy-OR is exact when its inputs are binary; the leaky integrator is exact when coverage is in $\{0, 1\}$; and the LogSumExp satisfies $\max_k x_k \leq \text{LSE} \leq \max_k x_k + \tau_r \log K$.
+However, the \emph{composition} of these relaxations does not inherit these guarantees, because each relaxation receives the soft output of the previous one rather than the binary values for which it was designed.
+
+The interaction introduces two competing biases:
+
+\paragraph{Phantom coverage (gap shortening).}
+The soft sigmoid assigns nonzero coverage $c_{ij} > 0$ to satellites slightly \emph{below} the visibility threshold ($\alpha_{ij} < \alpha_{\min}$).
+This phantom coverage propagates through the noisy-OR and partially resets the leaky integrator, producing gaps that are \emph{shorter} than the true discrete gaps.
+For example, a satellite at $\alpha = \alpha_{\min} - 2\tau$ contributes $c_{ij} \approx 0.12$, which the leaky integrator treats as a partial coverage event.
+
+\paragraph{Incomplete reset (gap lengthening).}
+Conversely, a satellite well above the threshold produces $c_{ij} \approx 0.99$, not exactly 1.
+The leaky integrator retains a fraction $(1 - C_j) \approx 0.01$ of the accumulated gap at each coverage event.
+Over time, this residual prevents the gap from fully resetting, producing relaxed gaps that are \emph{longer} than the true gaps during sustained coverage.
+The LogSumExp adds a further upward bias of at most $\tau_r \log K$.
+
+These effects compete: phantom coverage shortens gaps near the visibility boundary, while incomplete resets and the LogSumExp overestimate lengthen them.
+The net bias depends on the specific geometry and is neither a guaranteed upper nor lower bound on the true objective.
+
+For optimization, the critical question is not whether the relaxed loss equals the true loss, but whether the two have similar \emph{optima}.
+We validate this empirically in \secref{sec:relaxation_quality} by computing the hard (discrete) coverage and revisit metrics at the optimizer's solution and comparing them to the relaxed values.
+The relaxation temperatures $\tau$ and $\tau_r$ control the trade-off: smaller values tighten the approximation but sharpen the gradients, potentially destabilizing optimization.
+A temperature annealing schedule---starting with large temperatures for a smooth landscape and progressively tightening---could mitigate this trade-off, though we leave this to future work.
+
+\subsection{Optimization}
+\label{sec:optimization}
+
+The full computational graph is:
+\begin{equation}
+    \underbrace{\vect{x}_i}_{\text{TLE}} \xrightarrow{\text{dSGP4}} \underbrace{\vect{r}_i(t)}_{\text{TEME}} \xrightarrow{\text{GMST}} \underbrace{\vect{r}_i^{\text{ECEF}}(t)}_{\text{ECEF}} \xrightarrow{\text{Eq.~\ref{eq:elevation}}} \alpha_{ij}(t) \xrightarrow{\text{Eqs.~\ref{eq:soft_visibility}--\ref{eq:mean_revisit}}} \mathcal{L}.
+    \label{eq:pipeline}
+\end{equation}
+Every operation is implemented in PyTorch~\citep{paszke2019pytorch}, so $\nabla_{\vect{x}_i} \mathcal{L}$ is computed via reverse-mode automatic differentiation.
+
+A practical complication is that $\partial$SGP4's \texttt{initialize\_tle} function rebuilds the computation graph from scratch at each call, producing a new ephemeral tensor for each satellite's elements.
+Standard optimizers like \texttt{torch.optim.Adam} track specific tensor objects and would lose their momentum state.
+We solve this by maintaining persistent parameter tensors that Adam tracks, and copying gradients from dSGP4's ephemeral tensors after each backward pass:
+\begin{equation}
+    \vect{p}_i.\text{grad} \leftarrow \text{clip}\bigl(\nabla_{\vect{x}_i^{\text{eph}}} \mathcal{L},\ [-5, 5]\bigr) \odot \vect{m},
+    \label{eq:grad_copy}
+\end{equation}
+where $\vect{p}_i$ is the persistent parameter tensor, $\vect{x}_i^{\text{eph}}$ is dSGP4's ephemeral tensor, and $\vect{m} \in \{0,1\}^9$ is a binary mask that zeroes gradients for fixed parameters (altitude, eccentricity, drag).
+Adam then steps on $\vect{p}_i$, and the updated values are written back to the TLE object before the next iteration.
+
+The per-iteration cost is $\mathcal{O}(NKM)$: $N$ satellite propagations over $K$ time steps, each evaluated against $M$ ground points.

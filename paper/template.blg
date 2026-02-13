@@ -1,0 +1,48 @@
+This is BibTeX, Version 0.99d (TeX Live 2025)
+Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
+The top-level auxiliary file: template.aux
+The style file: plainnat.bst
+Database file #1: references.bib
+Warning--empty journal in wertz2011space
+You've used 19 entries,
+            2773 wiz_defined-function locations,
+            699 strings with 8026 characters,
+and the built_in function-call counts, 8892 in all, are:
+= -- 737
+> -- 637
+< -- 9
++ -- 214
+- -- 195
+* -- 741
+:= -- 1419
+add.period$ -- 57
+call.type$ -- 19
+change.case$ -- 118
+chr.to.int$ -- 19
+cite$ -- 39
+duplicate$ -- 390
+empty$ -- 672
+format.name$ -- 226
+if$ -- 1813
+int.to.chr$ -- 1
+int.to.str$ -- 1
+missing$ -- 22
+newline$ -- 103
+num.names$ -- 76
+pop$ -- 246
+preamble$ -- 1
+purify$ -- 102
+quote$ -- 0
+skip$ -- 305
+stack$ -- 0
+substring$ -- 200
+swap$ -- 21
+text.length$ -- 1
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 194
+warning$ -- 1
+while$ -- 70
+width$ -- 0
+write$ -- 243
+(There was 1 warning)

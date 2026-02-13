@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "differentiable-eo"
+version = "0.1.0"
+description = "Differentiable satellite constellation optimization via dSGP4"
+requires-python = ">=3.9"
+dependencies = [
+    "torch",
+    "dsgp4",
+    "numpy",
+    "matplotlib",
+]
+
+[tool.setuptools.packages.find]
+include = ["differentiable_eo*"]

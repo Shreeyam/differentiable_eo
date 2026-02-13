@@ -1,0 +1,103 @@
+\begin{thebibliography}{19}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Acciarini et~al.(2025)Acciarini, Baydin, and Izzo]{acciarini2024dsgp4}
+Giacomo Acciarini, At{\i}l{\i}m~G{\"u}ne{\c{s}} Baydin, and Dario Izzo.
+\newblock Differentiable orbital mechanics with automatic differentiation.
+\newblock \emph{Acta Astronautica}, 225:\penalty0 679--687, 2025.
+
+\bibitem[Akg{\"u}l and Kaymak(2007)]{howell2006satellite}
+Birdal~Uyar Akg{\"u}l and Ufuk Kaymak.
+\newblock Optimal satellite constellation design.
+\newblock \emph{Computers \& Operations Research}, 34:\penalty0 1091--1106, 2007.
+
+\bibitem[Baydin et~al.(2018)Baydin, Pearlmutter, Radul, and Siskind]{baydin2018automatic}
+At{\i}l{\i}m~G{\"u}ne{\c{s}} Baydin, Barak~A. Pearlmutter, Alexey~Andreyevich Radul, and Jeffrey~Mark Siskind.
+\newblock Automatic differentiation in machine learning: A survey.
+\newblock \emph{Journal of Machine Learning Research}, 18\penalty0 (153):\penalty0 1--43, 2018.
+
+\bibitem[Boyd and Vandenberghe(2004)]{boyd2004convex}
+Stephen Boyd and Lieven Vandenberghe.
+\newblock \emph{Convex Optimization}.
+\newblock Cambridge University Press, 2004.
+
+\bibitem[de~Avila Belbute-Peres et~al.(2019)de~Avila Belbute-Peres, Smith, Allen, Tenenbaum, and Kolter]{degrave2019differentiable}
+Filipe de~Avila Belbute-Peres, Kevin Smith, Kelsey Allen, Josh Tenenbaum, and J.~Zico Kolter.
+\newblock A differentiable physics engine for deep learning in robotics.
+\newblock \emph{Frontiers in Neurorobotics}, 2019.
+
+\bibitem[Gerstner and Kistler(2002)]{gerstner2002spiking}
+Wulfram Gerstner and Werner~M. Kistler.
+\newblock \emph{Spiking Neuron Models: Single Neurons, Populations, Plasticity}.
+\newblock Cambridge University Press, 2002.
+
+\bibitem[Hu et~al.(2020)Hu, Anderson, Li, Sun, Carr, Ragan-Kelley, and Durand]{hu2020difftaichi}
+Yuanming Hu, Luke Anderson, Tzu-Mao Li, Qi~Sun, Nathan Carr, Jonathan Ragan-Kelley, and Fr{\'e}do Durand.
+\newblock Diff{T}aichi: Differentiable programming for physical simulations.
+\newblock In \emph{International Conference on Learning Representations}, 2020.
+
+\bibitem[Jang et~al.(2017)Jang, Gu, and Poole]{jang2017categorical}
+Eric Jang, Shixiang Gu, and Ben Poole.
+\newblock Categorical reparameterization with {Gumbel}-softmax.
+\newblock \emph{International Conference on Learning Representations}, 2017.
+
+\bibitem[Kingma and Ba(2015)]{kingma2015adam}
+Diederik~P. Kingma and Jimmy Ba.
+\newblock Adam: A method for stochastic optimization.
+\newblock \emph{International Conference on Learning Representations}, 2015.
+
+\bibitem[Lang and de~Weck(2024)]{lang2024constellation}
+Tania~J. Lang and Olivier~L. de~Weck.
+\newblock Satellite constellation optimization: A review.
+\newblock \emph{Aerospace Science and Technology}, 2024.
+
+\bibitem[Lee and Kim(2020)]{lee2020satellite}
+Hae-Dong Lee and Hae-Jin Kim.
+\newblock Satellite constellation pattern optimization for complex coverage.
+\newblock \emph{Journal of Spacecraft and Rockets}, 57\penalty0 (6):\penalty0 1280--1298, 2020.
+
+\bibitem[Li et~al.(2018)Li, Xu, Taylor, Studer, and Goldstein]{li2018visualizing}
+Hao Li, Zheng Xu, Gavin Taylor, Christoph Studer, and Tom Goldstein.
+\newblock Visualizing the loss landscape of neural nets.
+\newblock In \emph{Advances in Neural Information Processing Systems}, volume~31, 2018.
+
+\bibitem[Mortari et~al.(2004)Mortari, Wilkins, and Bruccoleri]{mortari2004flower}
+Daniele Mortari, Matthew~P. Wilkins, and Christian Bruccoleri.
+\newblock The flower constellations.
+\newblock \emph{Journal of the Astronautical Sciences}, 52\penalty0 (1--2):\penalty0 107--127, 2004.
+
+\bibitem[Paek et~al.(2019)Paek, Kim, and de~Weck]{paek2019recon}
+Sung~Wook Paek, Sangtae Kim, and Olivier de~Weck.
+\newblock Optimization of reconfigurable satellite constellations using simulated annealing and genetic algorithm.
+\newblock \emph{Sensors}, 19\penalty0 (4):\penalty0 765, 2019.
+
+\bibitem[Paszke et~al.(2019)Paszke, Gross, Massa, Lerer, Bradbury, Chanan, Killeen, Lin, Gimelshein, Antiga, et~al.]{paszke2019pytorch}
+Adam Paszke, Sam Gross, Francisco Massa, Adam Lerer, James Bradbury, Gregory Chanan, Trevor Killeen, Zeming Lin, Natalia Gimelshein, Luca Antiga, et~al.
+\newblock Py{T}orch: An imperative style, high-performance deep learning library.
+\newblock \emph{Advances in Neural Information Processing Systems}, 32, 2019.
+
+\bibitem[Pearl(1988)]{pearl1988probabilistic}
+Judea Pearl.
+\newblock \emph{Probabilistic Reasoning in Intelligent Systems: Networks of Plausible Inference}.
+\newblock Morgan Kaufmann, 1988.
+
+\bibitem[Vallado et~al.(2006)Vallado, Crawford, Hujsak, and Kelso]{vallado2006revisiting}
+David~A. Vallado, Paul Crawford, Richard Hujsak, and T.~S. Kelso.
+\newblock Revisiting spacetrack report \#3.
+\newblock \emph{AIAA/AAS Astrodynamics Specialist Conference and Exhibit}, 2006.
+
+\bibitem[Walker(1984)]{walker1984satellite}
+John~G. Walker.
+\newblock Satellite constellations.
+\newblock \emph{Journal of the British Interplanetary Society}, 37:\penalty0 559--572, 1984.
+
+\bibitem[Wertz et~al.(2011)Wertz, Everett, and Puschell]{wertz2011space}
+James~R. Wertz, David~F. Everett, and Jeffery~J. Puschell.
+\newblock Space mission engineering: The new {SMAD}.
+\newblock 2011.
+
+\end{thebibliography}

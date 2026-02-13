@@ -1,0 +1,85 @@
+\documentclass{article}
+
+\usepackage{arxiv}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{booktabs}
+\usepackage{amsfonts}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{nicefrac}
+\usepackage{microtype}
+\usepackage{graphicx}
+\usepackage{natbib}
+\usepackage{doi}
+\usepackage{pgfplots}
+\usepackage{tikz}
+\usepackage{siunitx}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+
+\usetikzlibrary{arrows.meta, positioning, shapes.geometric, calc, decorations.markings, patterns, fit, backgrounds}
+\usepgfplotslibrary{groupplots}
+\pgfplotsset{compat=1.18}
+
+\newcommand{\vect}[1]{\mathbf{#1}}
+\newcommand{\mat}[1]{\mathbf{#1}}
+\newcommand{\R}{\mathbb{R}}
+\DeclareMathOperator*{\argmin}{argmin}
+\DeclareMathOperator{\logsumexp}{LogSumExp}
+
+\newcommand\figref{Figure~\ref}
+\renewcommand\eqref{Equation~\ref}
+\newcommand\tabref{Table~\ref}
+\newcommand*{\secref}[1]{\hyperref[{#1}]{\S\ref*{#1}}}
+
+\title{Satellite Constellation Design via Relaxed Differentiable Coverage and Revisit Objectives}
+
+\author{
+    \href{https://orcid.org/0000-0002-7227-4946}{\includegraphics[scale=0.06]{orcid.pdf}\hspace{1mm}Shreeyam Kacker} \\
+	Department of Aeronautics and Astronautics\\
+	MIT\\
+	\texttt{shreeyam@mit.edu}
+    \And
+    Kerri Cahoy \\
+    Department of Aeronautics and Astronautics\\
+    MIT\\
+    \texttt{kcahoy@mit.edu}
+}
+
+\renewcommand{\headeright}{}
+\renewcommand{\undertitle}{}
+\renewcommand{\shorttitle}{Differentiable Constellation Design}
+
+\hypersetup{
+pdftitle={Differentiable Constellation Design via Relaxed Coverage and Revisit Objectives},
+pdfsubject={astro-ph, cs.LG},
+pdfauthor={Shreeyam Kacker, Kerri Cahoy},
+pdfkeywords={satellite constellation, differentiable programming, orbit propagation, coverage optimization},
+}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Gradient-based optimization of satellite constellations has been considered intractable: coverage and revisit objectives are inherently discrete, and prior attempts using finite-difference gradients through black-box simulators found the problem ``extremely poorly conditioned'' for gradient methods.
+We show that this intractability is an artifact of the non-differentiable objective formulation, not the underlying physics.
+By introducing four continuous relaxations---a soft sigmoid visibility model, a noisy-OR multi-satellite aggregation, a leaky integrator for revisit gap tracking, and a LogSumExp soft-maximum---and composing them with the differentiable dSGP4 orbit propagator, we obtain an end-to-end differentiable pipeline from orbital elements to coverage metrics.
+Unlike parametric constellation families (e.g.\ Walker-delta), this formulation naturally supports non-uniform, mission-specific objectives such as minimizing revisit time over weighted discrete target sets.
+On a 12-satellite constellation optimized for priority-weighted targets, Adam reduces the worst-case revisit gap by 70\% in 300 iterations---orders of magnitude fewer evaluations than the simulated annealing and genetic algorithm baselines that previously dominated this problem class.
+\end{abstract}
+
+\noindent\textbf{Keywords:} satellite constellation design, differentiable programming, orbit propagation, coverage optimization, revisit time
+
+\input{sections/introduction}
+\input{sections/related_work}
+\input{sections/method}
+\input{sections/experiments}
+\input{sections/conclusion}
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}
