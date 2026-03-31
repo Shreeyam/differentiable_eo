@@ -2,23 +2,26 @@
 \providecommand\hyper@newdestlabel[2]{}
 \providecommand\HyField@AuxAddToFields[1]{}
 \providecommand\HyField@AuxAddToCoFields[2]{}
-\citation{wertz2011space}
-\citation{paek2019recon}
 \citation{walker1984satellite}
 \citation{mortari2004flower}
-\citation{lang2024constellation,paek2019recon}
 \citation{paek2019recon}
-\@writefile{toc}{\contentsline {section}{\numberline {1}Introduction}{1}{section.1}\protected@file@percent }
-\newlabel{sec:introduction}{{1}{1}{Introduction}{section.1}{}}
+\citation{paek2019recon}
+\citation{acciarini2024dsgp4}
 \citation{acciarini2024dsgp4}
 \citation{walker1984satellite}
 \citation{mortari2004flower}
+\@writefile{toc}{\contentsline {section}{\numberline {1}Introduction}{1}{section.1}\protected@file@percent }
+\newlabel{sec:introduction}{{1}{1}{Introduction}{section.1}{}}
 \citation{paek2019recon}
-\citation{howell2006satellite}
-\citation{lee2020satellite}
-\citation{lang2024constellation}
-\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces End-to-end differentiable constellation optimization pipeline. Orbital elements are propagated through dSGP4 to $K$ timesteps, producing position vectors that are converted to ECEF and evaluated against a ground target grid. At each timestep, relaxations R1 (soft sigmoid) and R2 (noisy-OR) compute per-point coverage; R3 (leaky integrator) chains these across time to track revisit gaps; R4 (LogSumExp) aggregates the worst-case gap. Gradients from all $K$ timesteps accumulate back to the orbital elements via reverse-mode autodiff (dashed red).}}{2}{figure.1}\protected@file@percent }
-\newlabel{fig:pipeline}{{1}{2}{End-to-end differentiable constellation optimization pipeline. Orbital elements are propagated through dSGP4 to $K$ timesteps, producing position vectors that are converted to ECEF and evaluated against a ground target grid. At each timestep, relaxations R1 (soft sigmoid) and R2 (noisy-OR) compute per-point coverage; R3 (leaky integrator) chains these across time to track revisit gaps; R4 (LogSumExp) aggregates the worst-case gap. Gradients from all $K$ timesteps accumulate back to the orbital elements via reverse-mode autodiff (dashed red)}{figure.1}{}}
+\citation{choo2024survey}
+\citation{fraire2020sparse}
+\citation{abdelkhalik2011optimization}
+\citation{abdelkhalik2011optimization}
+\citation{williamsrogers2026milp}
+\citation{hwang2014satellite}
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Overview of end-to-end differentiable constellation optimization. \textbf  {Top:} Starting from a poorly-configured constellation with randomly spaced orbital planes and satellites, gradient optimization through the differentiable pipeline recovers a well-spaced constellation optimized for both coverage and revisit for a set of ground points. \textbf  {Bottom:} Orbital parameters $\boldsymbol  {\theta }_i$ are propagated through a differentiable orbit propagator and evaluated against a set of ground targets $\mathbf  {g}_j$ to produce relaxed coverage and revisit metrics ($\tilde  {C}$, $\tilde  {\Delta }^{\max }$), which form a differentiable loss $\mathcal  {L}$. Gradients $\nabla _{\boldsymbol  {\theta }}\mathcal  {L}$ flow back to the orbital parameters via reverse-mode automatic differentiation (dashed).}}{2}{figure.caption.1}\protected@file@percent }
+\providecommand*\caption@xref[2]{\@setref\relax\@undefined{#1}}
+\newlabel{fig:pipeline}{{1}{2}{Overview of end-to-end differentiable constellation optimization. \textbf {Top:} Starting from a poorly-configured constellation with randomly spaced orbital planes and satellites, gradient optimization through the differentiable pipeline recovers a well-spaced constellation optimized for both coverage and revisit for a set of ground points. \textbf {Bottom:} Orbital parameters $\boldsymbol {\theta }_i$ are propagated through a differentiable orbit propagator and evaluated against a set of ground targets $\vect {g}_j$ to produce relaxed coverage and revisit metrics ($\tilde {C}$, $\tilde {\Delta }^{\max }$), which form a differentiable loss $\mathcal {L}$. Gradients $\nabla _{\boldsymbol {\theta }}\mathcal {L}$ flow back to the orbital parameters via reverse-mode automatic differentiation (dashed)}{figure.caption.1}{}}
 \@writefile{toc}{\contentsline {section}{\numberline {2}Related Work}{2}{section.2}\protected@file@percent }
 \newlabel{sec:related_work}{{2}{2}{Related Work}{section.2}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {2.1}Constellation Design and Optimization}{2}{subsection.2.1}\protected@file@percent }
@@ -26,117 +29,147 @@
 \citation{hu2020difftaichi}
 \citation{degrave2019differentiable}
 \citation{jang2017categorical}
+\citation{kamra2021coverage}
 \citation{acciarini2024dsgp4}
+\citation{naylor2025dlite}
 \citation{acciarini2024dsgp4}
-\citation{vallado2006revisiting}
-\citation{jang2017categorical}
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Computational graph for differentiable constellation optimization. Orbital parameters $\boldsymbol  {\theta }_i$ are propagated to ECI position vectors $\{\mathbf  {r}_i(t_k)\}$ across $K$ timesteps. Four continuous relaxations (orange, \textbf  {R1}--\textbf  {R4}) transform the discrete coverage and revisit objectives into smooth surrogates: \textbf  {R1}~soft sigmoid visibility over targets and satellites, \textbf  {R2}~noisy-OR aggregation to all-satellite coverage, \textbf  {R3}~leaky integrator revisit gap accumulation, and \textbf  {R4}~LogSumExp soft-maximum over time. The coverage branch produces total soft coverage $\tilde  {C}$; the revisit branch produces the soft mean worst-case revisit $\tilde  {\Delta }^{\max }$. Both feed into the loss $\mathcal  {L}$, and gradients $\nabla _{\boldsymbol  {\theta }}\mathcal  {L}$ flow back via reverse-mode automatic differentiation (dashed).}}{3}{figure.caption.3}\protected@file@percent }
+\newlabel{fig:graph}{{2}{3}{Computational graph for differentiable constellation optimization. Orbital parameters $\boldsymbol {\theta }_i$ are propagated to ECI position vectors $\{\vect {r}_i(t_k)\}$ across $K$ timesteps. Four continuous relaxations (orange, \textbf {R1}--\textbf {R4}) transform the discrete coverage and revisit objectives into smooth surrogates: \textbf {R1}~soft sigmoid visibility over targets and satellites, \textbf {R2}~noisy-OR aggregation to all-satellite coverage, \textbf {R3}~leaky integrator revisit gap accumulation, and \textbf {R4}~LogSumExp soft-maximum over time. The coverage branch produces total soft coverage $\tilde {C}$; the revisit branch produces the soft mean worst-case revisit $\tilde {\Delta }^{\max }$. Both feed into the loss $\mathcal {L}$, and gradients $\nabla _{\boldsymbol {\theta }}\mathcal {L}$ flow back via reverse-mode automatic differentiation (dashed)}{figure.caption.3}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {2.2}Differentiable Physics and Simulation}{3}{subsection.2.2}\protected@file@percent }
+\@writefile{tdo}{\contentsline {todo}{cite}{3}{section*.2}\protected@file@percent }
+\pgfsyspdfmark {pgfid1}{20930090}{18904012}
+\pgfsyspdfmark {pgfid4}{38356581}{18896144}
+\pgfsyspdfmark {pgfid5}{40470116}{18682829}
 \@writefile{toc}{\contentsline {section}{\numberline {3}Method}{3}{section.3}\protected@file@percent }
 \newlabel{sec:method}{{3}{3}{Method}{section.3}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.1}Problem Setup}{3}{subsection.3.1}\protected@file@percent }
-\newlabel{sec:setup}{{3.1}{3}{Problem Setup}{subsection.3.1}{}}
-\@writefile{toc}{\contentsline {paragraph}{Propagation.}{3}{section*.1}\protected@file@percent }
-\newlabel{eq:teme_to_ecef}{{1}{3}{Propagation}{equation.1}{}}
-\@writefile{toc}{\contentsline {paragraph}{Elevation angle.}{3}{section*.2}\protected@file@percent }
-\newlabel{eq:elevation}{{2}{3}{Elevation angle}{equation.2}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.2}Relaxation 1: Soft Visibility}{3}{subsection.3.2}\protected@file@percent }
-\newlabel{sec:soft_visibility}{{3.2}{3}{Relaxation 1: Soft Visibility}{subsection.3.2}{}}
-\newlabel{eq:soft_visibility}{{3}{3}{Relaxation 1: Soft Visibility}{equation.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.1}Problem Formulation}{3}{subsection.3.1}\protected@file@percent }
+\newlabel{sec:setup}{{3.1}{3}{Problem Formulation}{subsection.3.1}{}}
+\citation{vallado2006revisiting}
+\citation{jang2017categorical}
 \citation{pearl1988probabilistic}
-\citation{gerstner2002spiking}
-\citation{boyd2004convex}
+\@writefile{toc}{\contentsline {paragraph}{Propagation.}{4}{section*.4}\protected@file@percent }
+\newlabel{eq:teme_to_ecef}{{1}{4}{Propagation}{equation.1}{}}
+\@writefile{toc}{\contentsline {paragraph}{Elevation angle.}{4}{section*.5}\protected@file@percent }
+\newlabel{eq:elevation}{{2}{4}{Elevation angle}{equation.2}{}}
+\@writefile{toc}{\contentsline {paragraph}{Coverage and revisit.}{4}{section*.6}\protected@file@percent }
+\newlabel{eq:coverage}{{3}{4}{Coverage and revisit}{equation.3}{}}
+\newlabel{eq:coverage_fraction_hard}{{4}{4}{Coverage and revisit}{equation.4}{}}
+\newlabel{eq:revisit}{{5}{4}{Coverage and revisit}{equation.5}{}}
+\newlabel{eq:mean_revisit_hard}{{6}{4}{Coverage and revisit}{equation.6}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2}Relaxation 1: Soft Visibility}{4}{subsection.3.2}\protected@file@percent }
+\newlabel{sec:soft_visibility}{{3.2}{4}{Relaxation 1: Soft Visibility}{subsection.3.2}{}}
+\newlabel{eq:soft_visibility}{{7}{4}{Relaxation 1: Soft Visibility}{equation.7}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {3.3}Relaxation 2: Noisy-OR Coverage Aggregation}{4}{subsection.3.3}\protected@file@percent }
 \newlabel{sec:noisy_or}{{3.3}{4}{Relaxation 2: Noisy-OR Coverage Aggregation}{subsection.3.3}{}}
-\newlabel{eq:noisy_or}{{4}{4}{Relaxation 2: Noisy-OR Coverage Aggregation}{equation.4}{}}
-\newlabel{eq:coverage_fraction}{{5}{4}{Relaxation 2: Noisy-OR Coverage Aggregation}{equation.5}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.4}Relaxation 3: Leaky Integrator for Revisit Gaps}{4}{subsection.3.4}\protected@file@percent }
-\newlabel{sec:leaky_integrator}{{3.4}{4}{Relaxation 3: Leaky Integrator for Revisit Gaps}{subsection.3.4}{}}
-\newlabel{eq:leaky_integrator}{{6}{4}{Relaxation 3: Leaky Integrator for Revisit Gaps}{equation.6}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.5}Relaxation 4: LogSumExp Soft-Maximum}{4}{subsection.3.5}\protected@file@percent }
-\newlabel{sec:logsumexp}{{3.5}{4}{Relaxation 4: LogSumExp Soft-Maximum}{subsection.3.5}{}}
-\newlabel{eq:logsumexp}{{7}{4}{Relaxation 4: LogSumExp Soft-Maximum}{equation.7}{}}
-\newlabel{eq:mean_revisit}{{8}{4}{Relaxation 4: LogSumExp Soft-Maximum}{equation.8}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.6}Combined Objective}{4}{subsection.3.6}\protected@file@percent }
-\newlabel{sec:objective}{{3.6}{4}{Combined Objective}{subsection.3.6}{}}
-\newlabel{eq:loss}{{9}{4}{Combined Objective}{equation.9}{}}
+\newlabel{eq:noisy_or}{{8}{4}{Relaxation 2: Noisy-OR Coverage Aggregation}{equation.8}{}}
+\citation{gerstner2002spiking}
+\citation{boyd2004convex}
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces The four continuous relaxations used in this work to produce a differentiable loss landscape.}}{5}{figure.caption.7}\protected@file@percent }
+\newlabel{fig:relaxations}{{3}{5}{The four continuous relaxations used in this work to produce a differentiable loss landscape}{figure.caption.7}{}}
+\newlabel{eq:coverage_fraction}{{9}{5}{Relaxation 2: Noisy-OR Coverage Aggregation}{equation.9}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.4}Relaxation 3: Leaky Integrator for Revisit Gaps}{5}{subsection.3.4}\protected@file@percent }
+\newlabel{sec:leaky_integrator}{{3.4}{5}{Relaxation 3: Leaky Integrator for Revisit Gaps}{subsection.3.4}{}}
+\newlabel{eq:leaky_integrator}{{10}{5}{Relaxation 3: Leaky Integrator for Revisit Gaps}{equation.10}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.5}Relaxation 4: LogSumExp Soft-Maximum}{5}{subsection.3.5}\protected@file@percent }
+\newlabel{sec:logsumexp}{{3.5}{5}{Relaxation 4: LogSumExp Soft-Maximum}{subsection.3.5}{}}
+\newlabel{eq:logsumexp}{{11}{5}{Relaxation 4: LogSumExp Soft-Maximum}{equation.11}{}}
+\newlabel{eq:mean_revisit}{{12}{5}{Relaxation 4: LogSumExp Soft-Maximum}{equation.12}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.6}Combined Objective}{5}{subsection.3.6}\protected@file@percent }
+\newlabel{sec:objective}{{3.6}{5}{Combined Objective}{subsection.3.6}{}}
+\newlabel{eq:loss}{{13}{5}{Combined Objective}{equation.13}{}}
 \citation{paszke2019pytorch}
-\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces The four continuous relaxations. \textbf  {(a)} Soft sigmoid replaces the hard visibility threshold. \textbf  {(b)} Noisy-OR aggregates coverage across satellites. \textbf  {(c)} Leaky integrator tracks the revisit gap as a differentiable recurrence. \textbf  {(d)} LogSumExp approximates the worst-case (maximum) revisit gap.}}{5}{figure.2}\protected@file@percent }
-\newlabel{fig:relaxations}{{2}{5}{The four continuous relaxations. \textbf {(a)} Soft sigmoid replaces the hard visibility threshold. \textbf {(b)} Noisy-OR aggregates coverage across satellites. \textbf {(c)} Leaky integrator tracks the revisit gap as a differentiable recurrence. \textbf {(d)} LogSumExp approximates the worst-case (maximum) revisit gap}{figure.2}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.7}Tightness of the Composed Relaxation}{5}{subsection.3.7}\protected@file@percent }
-\newlabel{sec:tightness}{{3.7}{5}{Tightness of the Composed Relaxation}{subsection.3.7}{}}
-\@writefile{toc}{\contentsline {paragraph}{Phantom coverage (gap shortening).}{5}{section*.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Incomplete reset (gap lengthening).}{5}{section*.4}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.8}Optimization}{5}{subsection.3.8}\protected@file@percent }
-\newlabel{sec:optimization}{{3.8}{5}{Optimization}{subsection.3.8}{}}
-\newlabel{eq:pipeline}{{10}{5}{Optimization}{equation.10}{}}
-\newlabel{eq:grad_copy}{{11}{5}{Optimization}{equation.11}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.7}Tightness of the Composed Relaxation}{6}{subsection.3.7}\protected@file@percent }
+\newlabel{sec:tightness}{{3.7}{6}{Tightness of the Composed Relaxation}{subsection.3.7}{}}
+\@writefile{toc}{\contentsline {paragraph}{Phantom coverage (gap shortening).}{6}{section*.8}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Incomplete reset (gap lengthening).}{6}{section*.9}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.8}Optimization}{6}{subsection.3.8}\protected@file@percent }
+\newlabel{sec:optimization}{{3.8}{6}{Optimization}{subsection.3.8}{}}
+\@writefile{toc}{\contentsline {paragraph}{Computational graph.}{6}{section*.10}\protected@file@percent }
+\newlabel{para:interval_constraints}{{3.8}{6}{Interval constraints and reparameterization}{section*.11}{}}
+\@writefile{toc}{\contentsline {paragraph}{Interval constraints and reparameterization.}{6}{section*.11}\protected@file@percent }
+\newlabel{eq:reparam}{{14}{6}{Interval constraints and reparameterization}{equation.14}{}}
+\@writefile{toc}{\contentsline {paragraph}{Plane constraints via gradient accumulation.}{6}{section*.12}\protected@file@percent }
+\newlabel{eq:grad_accumulation}{{15}{6}{Plane constraints via gradient accumulation}{equation.15}{}}
 \citation{acciarini2024dsgp4}
-\citation{kingma2015adam}
-\citation{walker1984satellite,wertz2011space}
-\@writefile{toc}{\contentsline {section}{\numberline {4}Experiments}{6}{section.4}\protected@file@percent }
-\newlabel{sec:experiments}{{4}{6}{Experiments}{section.4}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.1}Common Setup}{6}{subsection.4.1}\protected@file@percent }
-\newlabel{sec:common_setup}{{4.1}{6}{Common Setup}{subsection.4.1}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.2}Experiment 1: Gradient Validation (Toy Problem)}{6}{subsection.4.2}\protected@file@percent }
-\newlabel{sec:toy}{{4.2}{6}{Experiment 1: Gradient Validation (Toy Problem)}{subsection.4.2}{}}
-\@writefile{toc}{\contentsline {paragraph}{Loss landscape.}{6}{section*.5}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Gradient descent trajectory.}{6}{section*.6}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.3}Experiment 2: Uniform Coverage Baseline}{6}{subsection.4.3}\protected@file@percent }
-\newlabel{sec:uniform}{{4.3}{6}{Experiment 2: Uniform Coverage Baseline}{subsection.4.3}{}}
-\@writefile{toc}{\contentsline {paragraph}{Initial configuration.}{6}{section*.7}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Results.}{6}{section*.8}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {4}Experiments}{7}{section.4}\protected@file@percent }
+\newlabel{sec:experiments}{{4}{7}{Experiments}{section.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.1}Common Setup}{7}{subsection.4.1}\protected@file@percent }
+\newlabel{sec:common_setup}{{4.1}{7}{Common Setup}{subsection.4.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.2}Hyperparameter Tuning}{7}{subsection.4.2}\protected@file@percent }
+\newlabel{sec:relaxation_quality}{{4.2}{7}{Hyperparameter Tuning}{subsection.4.2}{}}
+\@writefile{toc}{\contentsline {paragraph}{Ranking failure with shared softness.}{7}{section*.13}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Split-softness resolution.}{7}{section*.14}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces Split-softness calibration results. Valid = relaxed loss correctly ranks solutions with better hard metrics below those with worse hard metrics. Decoupling the coverage and revisit sigmoid temperatures allows smooth coverage gradients with a tight revisit sigmoid.}}{8}{table.caption.16}\protected@file@percent }
+\newlabel{tab:hyperparam_tuning}{{1}{8}{Split-softness calibration results. Valid = relaxed loss correctly ranks solutions with better hard metrics below those with worse hard metrics. Decoupling the coverage and revisit sigmoid temperatures allows smooth coverage gradients with a tight revisit sigmoid}{table.caption.16}{}}
+\@writefile{toc}{\contentsline {paragraph}{Smoothness--correctness tradeoff.}{8}{section*.15}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.3}Experiment 1: Toy Problem}{8}{subsection.4.3}\protected@file@percent }
+\newlabel{sec:toy}{{4.3}{8}{Experiment 1: Toy Problem}{subsection.4.3}{}}
+\@writefile{toc}{\contentsline {paragraph}{Loss landscape.}{8}{section*.17}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Gradient descent trajectory.}{8}{section*.18}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.4}Experiment 2: Uniform Coverage Baseline}{8}{subsection.4.4}\protected@file@percent }
+\newlabel{sec:uniform}{{4.4}{8}{Experiment 2: Uniform Coverage Baseline}{subsection.4.4}{}}
 \citation{li2018visualizing}
 \citation{paek2019recon}
 \citation{li2018visualizing}
 \citation{li2018visualizing}
-\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces Uniform coverage optimization: 12-satellite constellation, 300 iterations, \SI {550}{\kilo \metre } fixed altitude.}}{7}{table.1}\protected@file@percent }
-\newlabel{tab:uniform_results}{{1}{7}{Uniform coverage optimization: 12-satellite constellation, 300 iterations, \SI {550}{\kilo \metre } fixed altitude}{table.1}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces \textbf  {Top row:} convergence of coverage fraction, revisit gap, and total loss over 300 Adam iterations. \textbf  {Bottom row:} spatial coverage maps (initial vs.\ optimized, shared color scale) and ground tracks (gray: initial, colored: optimized by plane). The optimizer increases inclination and regularizes RAAN spacing, redistributing coverage from the equatorial band to higher latitudes.}}{7}{figure.3}\protected@file@percent }
-\newlabel{fig:convergence}{{3}{7}{\textbf {Top row:} convergence of coverage fraction, revisit gap, and total loss over 300 Adam iterations. \textbf {Bottom row:} spatial coverage maps (initial vs.\ optimized, shared color scale) and ground tracks (gray: initial, colored: optimized by plane). The optimizer increases inclination and regularizes RAAN spacing, redistributing coverage from the equatorial band to higher latitudes}{figure.3}{}}
-\@writefile{toc}{\contentsline {paragraph}{Loss landscape.}{7}{section*.9}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.4}Relaxation Quality}{7}{subsection.4.4}\protected@file@percent }
-\newlabel{sec:relaxation_quality}{{4.4}{7}{Relaxation Quality}{subsection.4.4}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces Loss landscape for the two-satellite mean anomaly optimization. \textbf  {Top row:} relaxed loss, coverage, and revisit. \textbf  {Bottom row:} corresponding hard (discrete) metrics. The global minimum lies along $|\mathcal  {M}_1 - \mathcal  {M}_2| = \SI {180}{\degree }$ (dashed line). The gradient descent trajectory (white line, circle = start, star = end) converges from a \SI {10}{\degree } separation to the optimum. The relaxed landscape is smoother than the hard landscape while preserving the same basin structure.}}{9}{figure.caption.19}\protected@file@percent }
+\newlabel{fig:toy_landscape}{{4}{9}{Loss landscape for the two-satellite mean anomaly optimization. \textbf {Top row:} relaxed loss, coverage, and revisit. \textbf {Bottom row:} corresponding hard (discrete) metrics. The global minimum lies along $|\mathcal {M}_1 - \mathcal {M}_2| = \SI {180}{\degree }$ (dashed line). The gradient descent trajectory (white line, circle = start, star = end) converges from a \SI {10}{\degree } separation to the optimum. The relaxed landscape is smoother than the hard landscape while preserving the same basin structure}{figure.caption.19}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces Walker recovery: 24-satellite constellation ($6 \times 4$), 1000 iterations, \SI {550}{\kilo \metre } fixed altitude, inclination fixed at \SI {60}{\degree }. Soft metrics are the relaxed surrogate values; hard metrics are the discrete ground truth.}}{9}{table.caption.22}\protected@file@percent }
+\newlabel{tab:uniform_results}{{2}{9}{Walker recovery: 24-satellite constellation ($6 \times 4$), 1000 iterations, \SI {550}{\kilo \metre } fixed altitude, inclination fixed at \SI {60}{\degree }. Soft metrics are the relaxed surrogate values; hard metrics are the discrete ground truth}{table.caption.22}{}}
+\@writefile{toc}{\contentsline {paragraph}{Initial configuration.}{9}{section*.20}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Results.}{9}{section*.21}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Loss landscape.}{9}{section*.24}\protected@file@percent }
 \citation{paek2019recon}
-\citation{paek2019recon}
-\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces Loss landscape around the optimum, visualized on a 2D slice through parameter space~\citep  {li2018visualizing}. \textbf  {Left:} total loss. \textbf  {Center:} coverage fraction. \textbf  {Right:} mean max revisit gap. The red star marks the optimum. The smooth basin confirms that the relaxed objectives are well-conditioned for gradient-based optimization.}}{8}{figure.4}\protected@file@percent }
-\newlabel{fig:landscape}{{4}{8}{Loss landscape around the optimum, visualized on a 2D slice through parameter space~\citep {li2018visualizing}. \textbf {Left:} total loss. \textbf {Center:} coverage fraction. \textbf {Right:} mean max revisit gap. The red star marks the optimum. The smooth basin confirms that the relaxed objectives are well-conditioned for gradient-based optimization}{figure.4}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces Relaxation quality: comparison of relaxed (optimized) and hard (discrete) metrics evaluated at the same optimized constellation parameters. The relaxed objective is a faithful surrogate: metrics are close and solution ranking is preserved.}}{8}{table.2}\protected@file@percent }
-\newlabel{tab:relaxation_quality}{{2}{8}{Relaxation quality: comparison of relaxed (optimized) and hard (discrete) metrics evaluated at the same optimized constellation parameters. The relaxed objective is a faithful surrogate: metrics are close and solution ranking is preserved}{table.2}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.5}Experiment 3: Weighted Target Optimization}{8}{subsection.4.5}\protected@file@percent }
-\newlabel{sec:weighted}{{4.5}{8}{Experiment 3: Weighted Target Optimization}{subsection.4.5}{}}
-\@writefile{toc}{\contentsline {paragraph}{Target set.}{8}{section*.10}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Weighted objective.}{8}{section*.11}\protected@file@percent }
-\newlabel{eq:weighted_loss}{{12}{8}{Weighted objective}{equation.12}{}}
-\@writefile{toc}{\contentsline {paragraph}{Results.}{8}{section*.12}\protected@file@percent }
-\citation{paek2019recon}
-\citation{paek2019recon}
-\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces Weighted target optimization: mean priority-weighted revisit gap (minutes) for 12 satellites at \SI {550}{\kilo \metre }. Lower is better. Walker 12/4/1 provides a symmetric baseline.}}{9}{table.3}\protected@file@percent }
-\newlabel{tab:weighted_results}{{3}{9}{Weighted target optimization: mean priority-weighted revisit gap (minutes) for 12 satellites at \SI {550}{\kilo \metre }. Lower is better. Walker 12/4/1 provides a symmetric baseline}{table.3}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.6}Computational Cost}{9}{subsection.4.6}\protected@file@percent }
-\newlabel{sec:cost}{{4.6}{9}{Computational Cost}{subsection.4.6}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {5}Conclusions and Future Work}{9}{section.5}\protected@file@percent }
-\newlabel{sec:conclusion}{{5}{9}{Conclusions and Future Work}{section.5}{}}
-\@writefile{toc}{\contentsline {paragraph}{Limitations.}{9}{section*.13}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces Walker recovery experiment. \textbf  {(a)} Convergence of soft and hard coverage and revisit metrics over 1000 iterations, with Walker 24/6/1 reference (dashed). The optimizer matches Walker performance by iteration $\sim $400. \textbf  {(b)} RAAN vs mean anomaly trajectories. Hollow circles show the initial configuration, solid circles the optimized result, and stars the Walker reference.}}{10}{figure.caption.23}\protected@file@percent }
+\newlabel{fig:convergence}{{5}{10}{Walker recovery experiment. \textbf {(a)} Convergence of soft and hard coverage and revisit metrics over 1000 iterations, with Walker 24/6/1 reference (dashed). The optimizer matches Walker performance by iteration $\sim $400. \textbf {(b)} RAAN vs mean anomaly trajectories. Hollow circles show the initial configuration, solid circles the optimized result, and stars the Walker reference}{figure.caption.23}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.5}Experiment 3: Regional Target Optimization}{10}{subsection.4.5}\protected@file@percent }
+\newlabel{sec:weighted}{{4.5}{10}{Experiment 3: Regional Target Optimization}{subsection.4.5}{}}
+\@writefile{toc}{\contentsline {paragraph}{Setup.}{10}{section*.26}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Results.}{10}{section*.27}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces Loss landscape visualization~\citep  {li2018visualizing}. \textbf  {Left column:} global view along random directions (zoomed out) revealing the broader landscape structure. \textbf  {Columns 2--5:} per-trajectory PCA slices, each showing the landscape along that trajectory's own principal components (white line, circle = start, star = end). \textbf  {Top row:} relaxed total loss. \textbf  {Bottom row:} hard (discrete) total loss. The per-trajectory views show smooth basins, while the global view reveals the multi-modal structure of the full parameter space.}}{11}{figure.caption.25}\protected@file@percent }
+\newlabel{fig:landscape}{{6}{11}{Loss landscape visualization~\citep {li2018visualizing}. \textbf {Left column:} global view along random directions (zoomed out) revealing the broader landscape structure. \textbf {Columns 2--5:} per-trajectory PCA slices, each showing the landscape along that trajectory's own principal components (white line, circle = start, star = end). \textbf {Top row:} relaxed total loss. \textbf {Bottom row:} hard (discrete) total loss. The per-trajectory views show smooth basins, while the global view reveals the multi-modal structure of the full parameter space}{figure.caption.25}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces Regional target optimization: 4 satellites (2 planes $\times $ 2), 2000 iterations, all orbital geometry parameters free with coupled perigee/apoapsis constraints.}}{11}{table.caption.28}\protected@file@percent }
+\newlabel{tab:weighted_results}{{3}{11}{Regional target optimization: 4 satellites (2 planes $\times $ 2), 2000 iterations, all orbital geometry parameters free with coupled perigee/apoapsis constraints}{table.caption.28}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {5}Conclusions and Future Work}{11}{section.5}\protected@file@percent }
+\newlabel{sec:conclusion}{{5}{11}{Conclusions and Future Work}{section.5}{}}
+\@writefile{toc}{\contentsline {paragraph}{Limitations.}{11}{section*.32}\protected@file@percent }
 \bibstyle{plainnat}
 \bibdata{references}
-\bibcite{acciarini2024dsgp4}{{1}{2025}{{Acciarini et~al.}}{{Acciarini, Baydin, and Izzo}}}
-\bibcite{howell2006satellite}{{2}{2007}{{Akg{\"u}l and Kaymak}}{{}}}
+\bibcite{abdelkhalik2011optimization}{{1}{2011}{{Abdelkhalik and Gad}}{{}}}
+\bibcite{acciarini2024dsgp4}{{2}{2025}{{Acciarini et~al.}}{{Acciarini, Baydin, and Izzo}}}
 \bibcite{baydin2018automatic}{{3}{2018}{{Baydin et~al.}}{{Baydin, Pearlmutter, Radul, and Siskind}}}
 \bibcite{boyd2004convex}{{4}{2004}{{Boyd and Vandenberghe}}{{}}}
-\bibcite{degrave2019differentiable}{{5}{2019}{{de~Avila Belbute-Peres et~al.}}{{de~Avila Belbute-Peres, Smith, Allen, Tenenbaum, and Kolter}}}
-\bibcite{gerstner2002spiking}{{6}{2002}{{Gerstner and Kistler}}{{}}}
-\bibcite{hu2020difftaichi}{{7}{2020}{{Hu et~al.}}{{Hu, Anderson, Li, Sun, Carr, Ragan-Kelley, and Durand}}}
-\bibcite{jang2017categorical}{{8}{2017}{{Jang et~al.}}{{Jang, Gu, and Poole}}}
-\bibcite{kingma2015adam}{{9}{2015}{{Kingma and Ba}}{{}}}
-\bibcite{lang2024constellation}{{10}{2024}{{Lang and de~Weck}}{{}}}
-\bibcite{lee2020satellite}{{11}{2020}{{Lee and Kim}}{{}}}
-\bibcite{li2018visualizing}{{12}{2018}{{Li et~al.}}{{Li, Xu, Taylor, Studer, and Goldstein}}}
-\bibcite{mortari2004flower}{{13}{2004}{{Mortari et~al.}}{{Mortari, Wilkins, and Bruccoleri}}}
-\bibcite{paek2019recon}{{14}{2019}{{Paek et~al.}}{{Paek, Kim, and de~Weck}}}
-\bibcite{paszke2019pytorch}{{15}{2019}{{Paszke et~al.}}{{Paszke, Gross, Massa, Lerer, Bradbury, Chanan, Killeen, Lin, Gimelshein, Antiga, et~al.}}}
-\bibcite{pearl1988probabilistic}{{16}{1988}{{Pearl}}{{}}}
-\bibcite{vallado2006revisiting}{{17}{2006}{{Vallado et~al.}}{{Vallado, Crawford, Hujsak, and Kelso}}}
-\bibcite{walker1984satellite}{{18}{1984}{{Walker}}{{}}}
-\bibcite{wertz2011space}{{19}{2011}{{Wertz et~al.}}{{Wertz, Everett, and Puschell}}}
-\@writefile{toc}{\contentsline {paragraph}{Future work.}{10}{section*.14}\protected@file@percent }
-\gdef \@abspage@last{10}
+\bibcite{choo2024survey}{{5}{2024}{{Choo et~al.}}{{Choo, Ahner, and Little}}}
+\bibcite{degrave2019differentiable}{{6}{2019}{{de~Avila Belbute-Peres et~al.}}{{de~Avila Belbute-Peres, Smith, Allen, Tenenbaum, and Kolter}}}
+\bibcite{fraire2020sparse}{{7}{2020}{{Fraire et~al.}}{{Fraire, Henn, Dovis, Garello, and Taricco}}}
+\bibcite{gerstner2002spiking}{{8}{2002}{{Gerstner and Kistler}}{{}}}
+\bibcite{hu2020difftaichi}{{9}{2020}{{Hu et~al.}}{{Hu, Anderson, Li, Sun, Carr, Ragan-Kelley, and Durand}}}
+\@writefile{lot}{\contentsline {table}{\numberline {4}{\ignorespaces Per-plane orbital geometry discovered by the optimizer for the Europe target set. Both planes converge to eccentric, Molniya-like orbits with apogee over the northern hemisphere ($\omega \approx \SI {270}{\degree }$). The Walker baseline uses circular orbits at \SI {550}{\kilo \metre }.}}{12}{table.caption.29}\protected@file@percent }
+\newlabel{tab:exp3_geometry}{{4}{12}{Per-plane orbital geometry discovered by the optimizer for the Europe target set. Both planes converge to eccentric, Molniya-like orbits with apogee over the northern hemisphere ($\omega \approx \SI {270}{\degree }$). The Walker baseline uses circular orbits at \SI {550}{\kilo \metre }}{table.caption.29}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {7}{\ignorespaces Convergence of the Europe target optimization over 2000 iterations. The optimizer rapidly improves both coverage and revisit over the Walker baseline (dashed).}}{12}{figure.caption.30}\protected@file@percent }
+\newlabel{fig:exp3_convergence}{{7}{12}{Convergence of the Europe target optimization over 2000 iterations. The optimizer rapidly improves both coverage and revisit over the Walker baseline (dashed)}{figure.caption.30}{}}
+\@writefile{toc}{\contentsline {paragraph}{Future work.}{12}{section*.33}\protected@file@percent }
+\bibcite{hwang2014satellite}{{10}{2014}{{Hwang et~al.}}{{Hwang, Lee, Cutler, and Martins}}}
+\bibcite{jang2017categorical}{{11}{2017}{{Jang et~al.}}{{Jang, Gu, and Poole}}}
+\bibcite{kamra2021coverage}{{12}{2021}{{Kamra and Liu}}{{}}}
+\bibcite{li2018visualizing}{{13}{2018}{{Li et~al.}}{{Li, Xu, Taylor, Studer, and Goldstein}}}
+\bibcite{mortari2004flower}{{14}{2004}{{Mortari et~al.}}{{Mortari, Wilkins, and Bruccoleri}}}
+\bibcite{naylor2025dlite}{{15}{2025}{{Naylor et~al.}}{{Naylor, Mishra, Barbara, and Dansereau}}}
+\bibcite{paek2019recon}{{16}{2019}{{Paek et~al.}}{{Paek, Kim, and de~Weck}}}
+\bibcite{paszke2019pytorch}{{17}{2019}{{Paszke et~al.}}{{Paszke, Gross, Massa, Lerer, Bradbury, Chanan, Killeen, Lin, Gimelshein, Antiga, et~al.}}}
+\bibcite{pearl1988probabilistic}{{18}{1988}{{Pearl}}{{}}}
+\bibcite{vallado2006revisiting}{{19}{2006}{{Vallado et~al.}}{{Vallado, Crawford, Hujsak, and Kelso}}}
+\bibcite{walker1984satellite}{{20}{1984}{{Walker}}{{}}}
+\bibcite{williamsrogers2026milp}{{21}{2026}{{Williams~Rogers et~al.}}{{Williams~Rogers, Won, Koh, Hong, and Lee}}}
+\@writefile{lof}{\contentsline {figure}{\numberline {8}{\ignorespaces Visibility density over a \SI {24}{\hour } window: number of timesteps each ground bin is within \SI {10}{\degree } elevation of any satellite. \textbf  {(a)} The optimized constellation concentrates coverage over European latitudes via eccentric orbits with $\omega \approx \SI {270}{\degree }$ (apogee dwell in the north). Longitudinal density variations reflect the near-13:1 resonant ground track. \textbf  {(b)} The Walker baseline distributes coverage symmetrically north/south.}}{13}{figure.caption.31}\protected@file@percent }
+\newlabel{fig:europe_density}{{8}{13}{Visibility density over a \SI {24}{\hour } window: number of timesteps each ground bin is within \SI {10}{\degree } elevation of any satellite. \textbf {(a)} The optimized constellation concentrates coverage over European latitudes via eccentric orbits with $\omega \approx \SI {270}{\degree }$ (apogee dwell in the north). Longitudinal density variations reflect the near-13:1 resonant ground track. \textbf {(b)} The Walker baseline distributes coverage symmetrically north/south}{figure.caption.31}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {A}Hyperparameter Tuning}{13}{appendix.A}\protected@file@percent }
+\newlabel{app:hyperparam_grid}{{A}{13}{Hyperparameter Tuning}{appendix.A}{}}
+\@writefile{toc}{\contentsline {paragraph}{Constellation configuration.}{14}{section*.35}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Optimization settings.}{14}{section*.36}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Initial RAAN configurations.}{14}{section*.37}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Grid search parameters.}{14}{section*.38}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Validity criterion.}{14}{section*.39}\protected@file@percent }
+\newlabel{eq:validity}{{16}{14}{Validity criterion}{equation.16}{}}
+\@writefile{toc}{\contentsline {paragraph}{Reproducibility.}{14}{section*.40}\protected@file@percent }
+\gdef \@abspage@last{14}

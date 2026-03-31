@@ -1,35 +1,45 @@
 \section{Introduction}
 \label{sec:introduction}
 
-Satellite constellation design---selecting orbital parameters for a fleet of satellites to optimize Earth observation performance---is a central problem in mission planning~\citep{wertz2011space}.
-For missions requiring responsive coverage of specific regions or targets, the design challenge is acute: the constellation must provide frequent revisit over non-uniform, mission-specific areas of interest while respecting orbital mechanics constraints.
-Applications range from disaster monitoring~\citep{paek2019recon} and maritime domain awareness to agricultural surveillance and defense reconnaissance.
+% Satellite constellation design---selecting orbital parameters for a fleet of satellites to optimize Earth observation performance---is a central problem in mission planning~\citep{wertz2011space}.
+% For missions requiring responsive coverage of specific regions or targets, the design challenge is acute: the constellation must provide frequent revisit over non-uniform, mission-specific areas of interest while respecting orbital mechanics constraints.
+% Applications range from disaster monitoring~\citep{paek2019recon} and maritime domain awareness to agricultural surveillance and defense reconnaissance.
+Designing satellite constellations is a fundamental problem in space mission design, across applications such as Earth Observation (EO), telecommunications, and navigation. The design space is high dimensional, with each spacecraft bringing up to six degrees of freedom corresponding to their orbital elements, and a wide range of often competing objectives to optimize over.
 
-The design space is high-dimensional.
-For $N$ satellites with fixed altitude and eccentricity, the free parameters include each satellite's inclination, right ascension of the ascending node (RAAN), and mean anomaly---yielding $3N$ continuous decision variables.
 Traditional approaches address this complexity in one of two ways.
-Parametric families such as Walker-delta~\citep{walker1984satellite} and Flower constellations~\citep{mortari2004flower} reduce the design space to a handful of parameters but are inherently symmetric, making them unsuitable for non-uniform coverage objectives.
-Metaheuristic methods---simulated annealing, genetic algorithms---can handle arbitrary objectives but require thousands to millions of forward evaluations through expensive orbit simulators~\citep{lang2024constellation, paek2019recon}.
+Parametric families such as Walker Delta, Walker Star~\citep{walker1984satellite}, and Flower constellations~\citep{mortari2004flower} reduce the design space to a fixed set of parameters but are inherently symmetric, making them non-optimal for non-uniform objectives.
+Metaheuristic methods such as genetic algorithms can handle arbitrary objectives but require thousands to millions of simulator rollouts~\citep{paek2019recon}.
 
-Gradient-based optimization would seem a natural alternative, but it has been considered intractable for this problem.
-\citet{paek2019recon} explicitly attempted gradient-based optimization of reconfigurable satellite constellations and found the problem ``extremely poorly conditioned for gradient-based methods,'' noting that ``even the solution convergence itself was rarely achieved.''
-Their gradients were computed via finite differences through a black-box orbit propagation and coverage simulation, with coverage and revisit metrics defined as discrete, non-differentiable functions of the orbital parameters.
+For EO missions, the design problem is especially complex. Coverage and daytime revisit requirements may be non-uniform across ground targets, with additional constraints on data downlink. This non-uniformity makes parametric familie non-optimal, while the combinatorial nature of the problem makes metaheuristic methods computationally expensive.
 
-We argue that this intractability is an artifact of the \emph{objective formulation}, not the underlying physics.
-The orbit propagation itself---specifically, the SGP4 model---is a composition of smooth trigonometric and polynomial functions with well-defined derivatives.
-The recent dSGP4 library~\citep{acciarini2024dsgp4} makes these derivatives available via PyTorch automatic differentiation.
-What remains non-differentiable are the coverage and revisit \emph{metrics}: the binary visibility indicator, the Boolean OR over satellites, the revisit gap computation, and the worst-case maximum.
+Gradient-based optimization has also been previously attempted, but with limited success. \citet{paek2019recon} found the problem poorly conditioned for gradient-based methods, with difficulty even achieving convergence. Previous work has been     limited the non-differentiability of the computational graph. Recent work by \citet{acciarini2024dsgp4} has addressed part of this by developing $\partial$SGP4, an end-to-end differentiable SGP4 orbit propagator. However, the coverage and revisit metrics themselves remain non-differentiable, due to requiring binary visibility indicators, Boolean OR operations, and max functions.
 
-We make three contributions:
+To address this, we make the following contributions:
 \begin{enumerate}
-    \item \textbf{Four continuous relaxations} that make coverage and revisit objectives differentiable: a soft sigmoid for binary visibility, a noisy-OR for multi-satellite aggregation, a leaky integrator for revisit gap tracking, and a LogSumExp soft-maximum for worst-case revisit (\figref{fig:relaxations}).
-    \item \textbf{An end-to-end differentiable pipeline} from orbital elements to mission-specific coverage metrics, composed with the dSGP4 propagator, enabling gradient-based constellation optimization with standard tools (PyTorch autograd, Adam) (\figref{fig:pipeline}).
-    \item \textbf{Demonstration on weighted target optimization}, a problem class where parametric constellation families are fundamentally inapplicable and where prior gradient-based attempts failed.  We show that first-order optimization succeeds when true analytical gradients are available through relaxed objectives, converging in 300 iterations versus thousands of evaluations for metaheuristic methods.
+    \item \textbf{Four continuous relaxations} that make coverage and revisit objectives differentiable: a soft sigmoid for visibility, a noisy-OR for multi-satellite aggregation, a leaky integrator for revisit gap tracking, and a LogSumExp soft-maximum for worst-case revisit (\figref{fig:relaxations}).
+    \item \textbf{An end-to-end differentiable pipeline} from orbital elements to mission-level coverage metrics, composed with $\partial$SGP4~\citep{acciarini2024dsgp4} and optimized with the AdamW optimizer (\figref{fig:pipeline}).
+    \item \textbf{Demonstration on weighted target optimization}, where parametric families are inapplicable and prior gradient-based attempts failed.
 \end{enumerate}
 
-\begin{figure}[t]
+
+\begin{figure*}[h]
     \centering
-    \input{figures/pipeline}
-    \caption{End-to-end differentiable constellation optimization pipeline.  Orbital elements are propagated through dSGP4 to $K$ timesteps, producing position vectors that are converted to ECEF and evaluated against a ground target grid.  At each timestep, relaxations R1 (soft sigmoid) and R2 (noisy-OR) compute per-point coverage; R3 (leaky integrator) chains these across time to track revisit gaps; R4 (LogSumExp) aggregates the worst-case gap.  Gradients from all $K$ timesteps accumulate back to the orbital elements via reverse-mode autodiff (dashed red).}
+    \includegraphics[width=.85\linewidth]{figures/overview.pdf}
+    \caption{%
+        Overview of end-to-end differentiable constellation optimization.
+        \textbf{Top:} Starting from a poorly-configured constellation
+        with randomly spaced orbital planes and satellites, gradient optimization
+        through the differentiable pipeline recovers a well-spaced
+        constellation optimized for both coverage and revisit for a set of ground points.
+        \textbf{Bottom:} Orbital parameters $\boldsymbol{\theta}_i$ are
+        propagated through a differentiable orbit propagator and
+        evaluated against a set of ground targets $\vect{g}_j$ to
+        produce relaxed coverage and revisit metrics
+        ($\tilde{C}$, $\tilde{\Delta}^{\max}$), which form a
+        differentiable loss $\mathcal{L}$.
+        Gradients $\nabla_{\boldsymbol{\theta}}\mathcal{L}$ flow back
+        to the orbital parameters via reverse-mode automatic
+        differentiation (dashed).%
+    }
     \label{fig:pipeline}
-\end{figure}
+\end{figure*}

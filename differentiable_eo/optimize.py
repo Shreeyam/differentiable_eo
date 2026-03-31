@@ -93,6 +93,14 @@ class ConstellationOptimizer:
         try:
             return reparam.free_indices.index(elem_idx)
         except ValueError:
+            # Check coupled constraint indices
+            from .constants import IDX_NO_KOZAI, IDX_ECCO
+            coupled_map = {IDX_NO_KOZAI: 'coupled_rp', IDX_ECCO: 'coupled_exc'}
+            if elem_idx in coupled_map:
+                try:
+                    return reparam.free_indices.index(coupled_map[elem_idx])
+                except ValueError:
+                    pass
             return None
 
     def _accumulate_per_plane_grads(self):
@@ -167,6 +175,7 @@ class ConstellationOptimizer:
             revisit_reduce=cfg.revisit_reduce,
             revisit_spatial_tau=cfg.revisit_spatial_tau,
             ground_unit=self.ground_unit,
+            revisit_softness=cfg.revisit_softness_deg,
         )
 
         # 3. Backward through dsgp4's ephemeral graph
@@ -276,6 +285,7 @@ class ConstellationOptimizer:
                 revisit_reduce=cfg.revisit_reduce,
                 revisit_spatial_tau=cfg.revisit_spatial_tau,
                 ground_unit=self.ground_unit,
+                revisit_softness=cfg.revisit_softness_deg,
             )
         print(f"\nInitial coverage: {init_cov.item()*100:.2f}%")
         print(f"Initial revisit:  {init_rev.item():.1f} min")

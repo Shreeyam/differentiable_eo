@@ -2,15 +2,11 @@
 \label{sec:conclusion}
 
 Gradient-based optimization of satellite constellations has been considered intractable due to the discrete, non-differentiable nature of coverage and revisit objectives.
-We showed that this intractability is an artifact of the objective formulation: by introducing four continuous relaxations and composing them with the differentiable dSGP4 orbit propagator, the entire pipeline becomes amenable to first-order optimization.
-The key insight is that true analytical gradients through relaxed objectives produce a well-conditioned loss landscape, whereas the finite-difference gradients through discrete objectives used in prior work~\citep{paek2019recon} do not.
+We showed that this intractability is an artifact of the objective formulation: by introducing four continuous relaxations and composing them with the differentiable $\partial$SGP4 orbit propagator, the entire pipeline becomes amenable to first-order optimization.
+The relaxed surrogate closely tracks the discrete objective (\secref{sec:relaxation_quality}) and produces well-conditioned gradients where finite-difference approaches through discrete objectives~\citep{paek2019recon} do not.
 
-The relaxed combined objective $\mathcal{L} = -\bar{C} + \lambda\,\bar{\Delta}^{\max}$ approximates the discrete objective $\mathcal{L}_{\text{hard}} = -\bar{C}_{\text{hard}} + \lambda\,\bar{\Delta}_{\text{hard}}^{\max}$, where $\bar{C}_{\text{hard}}$ is the fraction of space-time grid cells with at least one satellite above the elevation threshold, and $\bar{\Delta}_{\text{hard}}^{\max}$ is the mean over ground points of the true maximum revisit gap.
-As shown in \secref{sec:relaxation_quality}, the two objectives track closely in practice: the relaxed coverage closely matches its discrete counterpart, while the relaxed revisit provides a consistent overestimate due to the incomplete-reset and LogSumExp biases.
-Crucially, optimizing the relaxed surrogate yields solutions that are near-optimal under the hard objective, validating the composed relaxation as a faithful proxy.
-
-The framework naturally supports non-uniform, mission-specific objectives via target weighting---a problem class where parametric constellation families are fundamentally inapplicable.
-On weighted target optimization for wildfire monitoring and maritime domain awareness scenarios, the optimizer discovers asymmetric geometries tailored to the target distribution, outperforming symmetric Walker-delta baselines on the mission-specific metrics while converging in 300 iterations versus thousands of evaluations for metaheuristic methods.
+On uniform coverage, the optimizer recovers Walker-optimal geometry from arbitrary initialization.
+On weighted regional targets, it discovers asymmetric constellations---including eccentric orbits that dwell over target latitudes---that significantly outperform Walker baselines, without any domain-specific heuristics.
 
 \paragraph{Limitations.}
 The current approach optimizes a single-epoch snapshot and does not account for long-term perturbations (J2 RAAN drift, atmospheric drag) that alter constellation geometry over months.
@@ -19,8 +15,6 @@ While the loss landscape appears smooth near our solutions, we cannot rule out t
 The discrete design variables (number of planes, satellites per plane) remain non-differentiable and must be set by the user or searched over separately.
 
 \paragraph{Future work.}
-Several extensions are natural.
 Incorporating J2 secular perturbations would enable optimization of long-term constellation maintenance, potentially discovering geometries that exploit RAAN drift for improved coverage evolution.
 Multi-objective Pareto optimization would allow explicit trade-offs between competing mission requirements.
-Temperature annealing curricula---starting with large $\tau$ and $\tau_r$ and progressively tightening---could improve final solution quality.
-Finally, the framework could be extended to constellation augmentation problems, where new satellites are optimized to complement an existing fleet, a setting that completely breaks the symmetry assumptions of parametric design families.
+More broadly, the framework extends to constellation augmentation---optimizing new satellites to complement an existing fleet---a setting that completely breaks the symmetry assumptions of parametric families.

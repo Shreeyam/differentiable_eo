@@ -8,7 +8,7 @@ from .constants import (
     N_ELEMENTS, ELEMENT_NAMES,
 )
 from .constraints import (
-    FixedConstraint, UnboundedConstraint, BoxConstraint, ReparameterizedElements,
+    FixedConstraint, UnboundedConstraint, BoxConstraint, PeriapsisApoapsisConstraint, ReparameterizedElements,
     default_parameter_specs, specs_with_altitude,
 )
 from .coordinates import (
@@ -26,4 +26,11 @@ from .tle_utils import (
 )
 from .objective import propagate_constellation, compute_loss, compute_hard_metrics
 from .optimize import ConstellationOptimizer, OptimizationResult
-from .visualization import plot_optimization_results, plot_loss_landscape, compute_coverage_map, compute_revisit_map
+from .visualization import (
+    plot_optimization_results, plot_loss_landscape, compute_coverage_map, compute_revisit_map,
+    plot_loss_landscapes_per_trajectory,
+)
+from .globe import (
+    eci_xyz, camera_direction, is_occluded,
+    measure_ball_pixels, render_globe, setup_globe_axes,
+)

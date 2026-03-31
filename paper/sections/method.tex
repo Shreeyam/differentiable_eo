@@ -1,26 +1,57 @@
 \section{Method}
 \label{sec:method}
 
-\subsection{Problem Setup}
+
+
+
+\begin{figure*}[t]
+    \centering
+    \includegraphics[width=\linewidth]{figures/graph.pdf}
+        \caption{%
+        Computational graph for differentiable constellation optimization.
+        Orbital parameters $\boldsymbol{\theta}_i$ are propagated to ECI
+        position vectors $\{\vect{r}_i(t_k)\}$ across $K$ timesteps.
+        Four continuous relaxations (orange, \textbf{R1}--\textbf{R4})
+        transform the discrete coverage and revisit objectives into
+        smooth surrogates:
+        \textbf{R1}~soft sigmoid visibility over targets and satellites,
+        \textbf{R2}~noisy-OR aggregation to all-satellite coverage,
+        \textbf{R3}~leaky integrator revisit gap accumulation, and
+        \textbf{R4}~LogSumExp soft-maximum over time.
+        The coverage branch produces total soft coverage $\tilde{C}$;
+        the revisit branch produces the soft mean worst-case revisit
+        $\tilde{\Delta}^{\max}$.
+        Both feed into the loss $\mathcal{L}$, and gradients
+        $\nabla_{\boldsymbol{\theta}}\mathcal{L}$ flow back via
+        reverse-mode automatic differentiation (dashed).%
+    }
+    \label{fig:graph}
+\end{figure*}
+
+\subsection{Problem Formulation}
 \label{sec:setup}
 
-Consider a constellation of $N$ satellites, each parameterized by a two-line element (TLE) set.
-For constellation geometry optimization at a fixed altitude, the free parameters per satellite are the inclination $\iota$, right ascension of the ascending node $\Omega$, and mean anomaly $\mathcal{M}$.
-We fix the remaining TLE parameters (mean motion $n$, eccentricity $e \approx 0$, drag term $B^*$, and secular rates $\dot{n}$, $\ddot{n}$).
+We consider a constellation of $N$ satellites, each parameterized by a two-line element (TLE) set. 
+Each satellite brings up to a maximum of six degree of freedom corresponding to their orbital elements, $[a,~e,~i,~\Omega,~\omega,~\mathcal{M}]^\top$, corresponding to semi-major axis, eccentricity, inclination, right ascension of the ascending node (RAAN), argument of periapsis, and mean anomaly, respectively.
+We universally fix the remaining TLE parameters corresponding to mean motion $n$, drag term $B^*$, and secular rates $\dot{n}$, $\ddot{n}$ to keep the constellation configuration static over time.
 
-Given a grid of $M$ ground target points $\mathcal{G} = \{\vect{g}_1, \ldots, \vect{g}_M\}$ on the Earth's surface and a time horizon $[0, T]$ discretized into $K$ steps with spacing $\delta t = T/(K-1)$, we seek to maximize coverage and minimize the worst-case revisit gap.
+Given a grid of $J$ ground target points $\mathcal{G} = \{\vect{g}_1, \ldots, \vect{g}_J\}$ on the Earth's surface and a time horizon $[0, T]$ discretized into $K$ steps with spacing $\Delta t = T/(K-1)$, we seek to maximize coverage over the Earth and minimize the worst-case revisit gap.
 
 \paragraph{Propagation.}
-Each satellite's TLE elements are propagated through dSGP4~\citep{acciarini2024dsgp4} to produce position vectors $\vect{r}_i(t_k)$ in the True Equator Mean Equinox (TEME) reference frame.
+Each satellite's TLE elements are propagated through $\partial$SGP4~\citep{acciarini2024dsgp4} to produce position vectors $\vect{r}_i(t_k)$ in the True Equator Mean Equinox (TEME) reference frame.
 These are rotated to the Earth-Centered Earth-Fixed (ECEF) frame via the Greenwich Mean Sidereal Time angle $\theta_{\text{GMST}}(t_k)$:
 \begin{equation}
-    \vect{r}_i^{\text{ECEF}}(t_k) = \mat{R}_z\bigl(\theta_{\text{GMST}}(t_k)\bigr) \, \vect{r}_i^{\text{TEME}}(t_k),
+    \vect{r}_i^{\text{ECEF}}(t_k) = \mat{R}_z\left(\theta_{\text{GMST}}(t_k)\right) \, \vect{r}_i^{\text{TEME}}(t_k),
     \label{eq:teme_to_ecef}
 \end{equation}
 where $\mat{R}_z(\theta)$ is the standard rotation matrix about the $z$-axis.
-This single-axis rotation is an approximation: the full TEME-to-ECEF transformation requires accounting for precession, nutation, and polar motion~\citep{vallado2006revisiting}.
-For the \SI{24}{\hour} propagation horizons considered here, the precession-induced error is on the order of arcseconds, corresponding to sub-kilometre position offsets---negligible relative to the $\sim$\SI{2200}{\kilo\metre} ground footprint of a satellite at \SI{550}{\kilo\metre} altitude with \SI{10}{\degree} minimum elevation.
-For longer horizons or higher-precision applications, the full IAU-2000/2006 transformation should be used.
+This single-axis rotation is an approximation and neglects polar motion; the complete TEME-to-ECEF transformation requires an additional rotation between the Earth's instantaneous rotation axis and the ECEF pole~\citep{vallado2006revisiting}.
+For the $\sim$\SI{24}{\hour} propagation horizons considered in this work, 
+polar-motion offsets are on the order of tenths of arcseconds, 
+corresponding to sub-kilometre position errors. These errors are small 
+relative to the $\sim$\SI{2200}{\kilo\metre} ground footprint 
+of a satellite at \SI{550}{\kilo\metre} altitude with 
+\SI{10}{\degree} minimum elevation.
 
 \paragraph{Elevation angle.}
 The elevation angle from ground point $\vect{g}_j$ to satellite $i$ at time $t_k$ is
@@ -29,76 +60,123 @@ The elevation angle from ground point $\vect{g}_j$ to satellite $i$ at time $t_k
     \label{eq:elevation}
 \end{equation}
 where $\hat{\vect{g}}_j = \vect{g}_j / \|\vect{g}_j\|$ is the local vertical unit vector at the ground point.
-A satellite is conventionally visible when $\alpha_{ij} \geq \alpha_{\min}$, with $\alpha_{\min} = \SI{10}{\degree}$.
+A satellite is visible when $\alpha_{ij} \geq \alpha_{\min}$, where we consider the minimum elevation angle $\alpha_{\min} = \SI{10}{\degree}$, which varies depending on mission requirements.
 
-The challenge is that the visibility indicator $\mathbf{1}[\alpha_{ij}(t_k) \geq \alpha_{\min}]$, the Boolean OR over satellites, the revisit gap computation, and the worst-case maximum are all non-differentiable.
-We address each in turn.
+\paragraph{Coverage and revisit.}
+
+Instantaneous coverage at ground point $\vect{g}_j$ at time $t_k$ is the indicator function for when at least one satellite is visible: 
+\begin{equation}
+    C_j(t_k) = \mathbf{1}\!\left[\bigvee_{i=1}^{N} \alpha_{ij}(t_k) \geq \alpha_{\min}\right].
+    \label{eq:coverage}
+\end{equation}
+The instantaneous coverage fraction over the full set of ground points $\mathcal{G}$ is then
+\begin{equation}
+    C = \frac{1}{KJ} \sum_{k=1}^{K} \sum_{j=1}^{J} C_j(t_k).
+    \label{eq:coverage_fraction_hard}
+\end{equation}
+The revisit gap at ground point $\vect{g}_j$ is the elapsed time since the most recent coverage event:
+\begin{equation} 
+ \Delta_j(t_k) = t_k - t_{k'}, \quad k' = \max\left\{k'' \leq k : C_j(t_{k''}) = 1\right\}
+    \label{eq:revisit}
+\end{equation}
+and the mean worst-case revisit across all ground points is then
+\begin{equation}
+    \Delta^{\max} = \frac{1}{J} \sum_{j=1}^{J} \max_k \Delta_j(t_k).
+    \label{eq:mean_revisit_hard}
+\end{equation}
+
+We now introduce the relaxations required to make these metrics differentiable.
 
 \subsection{Relaxation 1: Soft Visibility}
 \label{sec:soft_visibility}
 
 We replace the hard step function with a sigmoid (\figref{fig:relaxations}a):
 \begin{equation}
-    c_{ij}(t_k) = \sigma\!\left(\frac{\alpha_{ij}(t_k) - \alpha_{\min}}{\tau}\right), \quad \sigma(x) = \frac{1}{1 + e^{-x}},
+    \tilde{c}_{ij}(t_k) = \sigma\!\left(\frac{\alpha_{ij}(t_k) - \alpha_{\min}}{\tau}\right), \quad \sigma(x) = \frac{1}{1 + e^{-x}},
     \label{eq:soft_visibility}
 \end{equation}
 where $\tau > 0$ controls the sharpness.
-As $\tau \to 0$ this recovers the hard indicator; we use $\tau = \SI{2}{\degree}$, which provides a smooth transition zone of approximately $\pm\SI{6}{\degree}$ around the threshold while keeping the approximation tight.
-This is analogous to the temperature-scaled softmax used in Gumbel-Softmax relaxations of discrete variables~\citep{jang2017categorical}.
+As $\tau \to 0$ this recovers the hard indicator.
+This relaxation is analogous to the temperature-scaled softmax used in Gumbel-Softmax relaxations of discrete variables~\citep{jang2017categorical}.
+
 
 \subsection{Relaxation 2: Noisy-OR Coverage Aggregation}
 \label{sec:noisy_or}
 
-For a ground point $\vect{g}_j$ at time $t_k$, we need to determine whether \emph{any} satellite provides coverage---a Boolean OR.
-Treating each $c_{ij}(t_k)$ as an independent detection probability, the noisy-OR~\citep{pearl1988probabilistic} gives (\figref{fig:relaxations}b):
+% For a ground point $\vect{g}_j$ at time $t_k$, we need to determine whether \emph{any} satellite provides coverage---a Boolean OR.
+Starting with the Boolean OR operator in \eqref{eq:coverage}, treating each $\tilde{c}_{ij}(t_k)$ as an independent detection probability, the noisy-OR~\citep{pearl1988probabilistic} relaxation gives (\figref{fig:relaxations}b):
 \begin{equation}
-    C_j(t_k) = 1 - \prod_{i=1}^{N} \bigl(1 - c_{ij}(t_k)\bigr).
+    \tilde{C}_j(t_k) = 1 - \prod_{i=1}^{N} \left(1 - \tilde{c}_{ij}(t_k)\right).
     \label{eq:noisy_or}
 \end{equation}
-This is smooth, monotonically increasing in each $c_{ij}$, and recovers the hard OR when all inputs are in $\{0, 1\}$.
-It also naturally handles overlapping coverage: adding a satellite that already covers a point produces diminishing marginal gain, preventing the optimizer from clustering satellites.
+This function is smooth, monotonically increasing in each $\tilde{c}_{ij}$, and recovers the hard OR when all inputs are in $\{0, 1\}$.
+This relaxation also inherently handles overlapping coverage: additional coverage of a point produces diminishing marginal gain, preventing the optimizer from clustering satellites.
 
-The \emph{coverage fraction} over the full space-time grid is
+The soft coverage fraction over the full set of ground points $\mathcal{G}$ with soft visibility and noisy-OR aggregation then becomes
 \begin{equation}
-    \bar{C} = \frac{1}{KM} \sum_{k=1}^{K} \sum_{j=1}^{M} C_j(t_k).
+    \tilde{C} = \frac{1}{KJ} \sum_{k=1}^{K} \sum_{j=1}^{J} \tilde{C}_j(t_k).
     \label{eq:coverage_fraction}
 \end{equation}
 
 \subsection{Relaxation 3: Leaky Integrator for Revisit Gaps}
 \label{sec:leaky_integrator}
 
-The revisit gap at a ground point is the time elapsed since the last coverage event.
-Computing this requires identifying discrete transitions, which is non-differentiable.
-We approximate it with a leaky integrator recurrence~\citep{gerstner2002spiking} (\figref{fig:relaxations}c):
+The revisit gap at a ground point is the time elapsed since the most recent coverage event. Computing this gap requires identifying discrete transitions which we instead approximate with a leaky integrator recurrence~\citep{gerstner2002spiking} (\figref{fig:relaxations}c):
 \begin{equation}
-    \Delta_j(t_k) = \bigl(\Delta_j(t_{k-1}) + \delta t\bigr) \cdot \bigl(1 - C_j(t_k)\bigr), \quad \Delta_j(t_0) = 0.
+    \tilde{\Delta}_j(t_k) = \left(\tilde{\Delta}_j(t_{k-1}) + \delta t\right) \cdot \left(1 - \tilde{C}_j(t_k)\right), \quad \tilde{\Delta}_j(t_0) = 0.
     \label{eq:leaky_integrator}
 \end{equation}
-When the point is covered ($C_j \approx 1$), the accumulated gap is multiplied by $\approx 0$, resetting it.
-When the point is not covered ($C_j \approx 0$), the gap grows by $\delta t$.
+When the ground point $\mathbf{g}_j$ is covered ($\tilde{C}_j \approx 1$), the accumulated gap is multiplied by approximately zero, resetting it.
+When the point is not covered ($\tilde{C}_j \approx 0$), the gap grows by $\Delta t$.
 This recurrence is fully differentiable and its maximum over time approximates the true worst-case revisit gap at each ground point.
 
 \subsection{Relaxation 4: LogSumExp Soft-Maximum}
 \label{sec:logsumexp}
 
-The worst-case revisit gap at ground point $\vect{g}_j$ is $\max_k \Delta_j(t_k)$, which has zero gradients almost everywhere.
+The soft worst-case revisit gap at ground point $\vect{g}_j$ is $\max_k \tilde{\Delta}_j(t_k)$, which has zero gradients almost everywhere.
 We replace it with the LogSumExp smooth maximum~\citep{boyd2004convex} (\figref{fig:relaxations}d):
 \begin{equation}
-    \widetilde{\Delta}_j^{\max} = \tau_r \cdot \log\!\left(\sum_{k=1}^{K} \exp\!\left(\frac{\Delta_j(t_k)}{\tau_r}\right)\right),
+    \widetilde{\Delta}_j^{\max} = \beta \cdot \log\!\left(\sum_{k=1}^{K} \exp\!\left(\frac{\tilde{\Delta}_j(t_k)}{\beta}\right)\right),
     \label{eq:logsumexp}
 \end{equation}
-where $\tau_r = \SI{30}{\minute}$.
-This satisfies $\max_k \Delta_j(t_k) \leq \widetilde{\Delta}_j^{\max} \leq \max_k \Delta_j(t_k) + \tau_r \log K$, providing a controllable upper bound.
-The mean worst-case revisit across all ground points is
+where $\beta$ is a sharpness parameter, for which we assign $\beta = \SI{30}{\minute}$.
+This relaxation satisfies the inequality $\max_k \tilde{\Delta}_j(t_k) \leq \widetilde{\Delta}_j^{\max} \leq \max_k \tilde{\Delta}_j(t_k) + \beta \log K$, providing an upper bound.
+The mean worst-case revisit across all ground points is then
 \begin{equation}
-    \bar{\Delta}^{\max} = \frac{1}{M} \sum_{j=1}^{M} \widetilde{\Delta}_j^{\max}.
+    \tilde{\Delta}^{\max} = \frac{1}{J} \sum_{j=1}^{J} \widetilde{\Delta}_j^{\max}.
     \label{eq:mean_revisit}
 \end{equation}
 
+In practice, the coverage and revisit objectives have different sensitivity to the sigmoid temperature $\tau$ in \eqref{eq:soft_visibility}: phantom coverage is an additive bias for coverage but multiplicatively resets the revisit integrator. We therefore split $\tau$ into $\tau_{\text{cov}}$ for the coverage objective and $\tau_{\text{rev}}$ for the revisit computation, calibrated in \secref{sec:relaxation_quality}.
+
 \begin{figure}[t]
     \centering
-    \input{figures/relaxations}
-    \caption{The four continuous relaxations.  \textbf{(a)} Soft sigmoid replaces the hard visibility threshold.  \textbf{(b)} Noisy-OR aggregates coverage across satellites.  \textbf{(c)} Leaky integrator tracks the revisit gap as a differentiable recurrence.  \textbf{(d)} LogSumExp approximates the worst-case (maximum) revisit gap.}
+    % STEP 1: The Images
+    % This resizebox forces the whole row of images to be exactly textwidth wide.
+    % The "!" tells LaTeX to calculate the height automatically to maintain aspect ratio.
+    \resizebox{\textwidth}{!}{%
+        \includegraphics[height=3cm]{figures/fig2a_soft_visibility.pdf}%
+        \includegraphics[height=3cm]{figures/fig2b_noisy_or.pdf}%
+        \includegraphics[height=3cm]{figures/fig2c_leaky_integrator.pdf}%
+        \includegraphics[height=3cm]{figures/fig2d_logsumexp.pdf}%
+    }
+    
+    % STEP 2: The Captions
+    % We use a minipage or makebox to align captions under the images.
+    % Since we don't know the exact width of each image above (it was dynamic),
+    % we use 0.24\textwidth as a safe approximation for the caption text width.
+    \vspace{-2mm} % Pull captions closer if needed
+    \begin{center}
+        \begin{minipage}{0.24\textwidth}\centering (a) Soft sigmoid \end{minipage}%
+        \hfill
+        \begin{minipage}{0.24\textwidth}\centering (b) Noisy-OR \end{minipage}%
+        \hfill
+        \begin{minipage}{0.24\textwidth}\centering (c) Leaky integrator \end{minipage}%
+        \hfill
+        \begin{minipage}{0.24\textwidth}\centering (d) LogSumExp \end{minipage}%
+    \end{center}
+
+    \caption{The four continuous relaxations used in this work to produce a differentiable loss landscape.}
     \label{fig:relaxations}
 \end{figure}
 
@@ -107,57 +185,76 @@ The mean worst-case revisit across all ground points is
 
 The total loss combines coverage maximization with revisit minimization:
 \begin{equation}
-    \mathcal{L}(\vect{x}) = -\bar{C} + \lambda \, \bar{\Delta}^{\max},
+    \mathcal{L}(\vect{x}) = -\tilde{C} + \lambda \, \tilde{\Delta}^{\max},
     \label{eq:loss}
 \end{equation}
-where $\vect{x} = \{\iota_i, \Omega_i, \mathcal{M}_i\}_{i=1}^{N}$ collects all free orbital parameters and $\lambda$ is a weighting coefficient.
-For non-uniform objectives, the sums over ground points can be replaced with weighted sums over a discrete target set (\secref{sec:weighted}).
+where $\vect{x}$ collects all free and reparameterized (\secref{para:interval_constraints}) orbital parameters and $\lambda$ is a weighting coefficient. The coverage term is instantaneous: it penalizes overlapping fields of view and saturates once satellites are well-separated. The revisit term, aggregated over the full simulation, continues providing gradients after coverage plateaus. Although both terms push toward spacing satellites apart, they operate at different scales---coverage quickly separates clusters, while revisit works globally.
+
+For objectives that are not geodesically uniform, the sums over ground points can be replaced with weighted sums over a discrete target set (\secref{sec:weighted}). 
 
 \subsection{Tightness of the Composed Relaxation}
 \label{sec:tightness}
 
-Each of the four relaxations is individually tight: the soft sigmoid recovers the hard step as $\tau \to 0$; the noisy-OR is exact when its inputs are binary; the leaky integrator is exact when coverage is in $\{0, 1\}$; and the LogSumExp satisfies $\max_k x_k \leq \text{LSE} \leq \max_k x_k + \tau_r \log K$.
+Each of the four relaxations is individually tight: the soft sigmoid recovers the hard step as $\tau \to 0$; the noisy-OR is exact when its inputs are binary; the leaky integrator is exact when coverage is in $\{0, 1\}$; and the LogSumExp satisfies $\max_k x_k \leq \text{LSE} \leq \max_k x_k + \beta \log K$.
 However, the \emph{composition} of these relaxations does not inherit these guarantees, because each relaxation receives the soft output of the previous one rather than the binary values for which it was designed.
 
 The interaction introduces two competing biases:
 
 \paragraph{Phantom coverage (gap shortening).}
-The soft sigmoid assigns nonzero coverage $c_{ij} > 0$ to satellites slightly \emph{below} the visibility threshold ($\alpha_{ij} < \alpha_{\min}$).
+The soft sigmoid coverage indicator assigns nonzero coverage $\tilde{c}_{ij} > 0$ to satellites slightly \emph{below} the visibility threshold ($\alpha_{ij} < \alpha_{\min}$).
 This phantom coverage propagates through the noisy-OR and partially resets the leaky integrator, producing gaps that are \emph{shorter} than the true discrete gaps.
-For example, a satellite at $\alpha = \alpha_{\min} - 2\tau$ contributes $c_{ij} \approx 0.12$, which the leaky integrator treats as a partial coverage event.
 
 \paragraph{Incomplete reset (gap lengthening).}
-Conversely, a satellite well above the threshold produces $c_{ij} \approx 0.99$, not exactly 1.
-The leaky integrator retains a fraction $(1 - C_j) \approx 0.01$ of the accumulated gap at each coverage event.
+Conversely, a satellite well above the threshold produces $\tilde{c}_{ij} \approx 0.99$, not exactly 1.
+The leaky integrator retains a fraction $(1 - \tilde{C}_j) \approx 0.01$ of the accumulated gap at each coverage event.
 Over time, this residual prevents the gap from fully resetting, producing relaxed gaps that are \emph{longer} than the true gaps during sustained coverage.
-The LogSumExp adds a further upward bias of at most $\tau_r \log K$.
+The LogSumExp adds a further upward bias of at most $\beta \log K$.
 
 These effects compete: phantom coverage shortens gaps near the visibility boundary, while incomplete resets and the LogSumExp overestimate lengthen them.
 The net bias depends on the specific geometry and is neither a guaranteed upper nor lower bound on the true objective.
+The asymmetric sensitivity---additive for coverage, multiplicative for revisit---motivates the split sigmoid temperature introduced in \secref{sec:logsumexp}.
 
-For optimization, the critical question is not whether the relaxed loss equals the true loss, but whether the two have similar \emph{optima}.
-We validate this empirically in \secref{sec:relaxation_quality} by computing the hard (discrete) coverage and revisit metrics at the optimizer's solution and comparing them to the relaxed values.
-The relaxation temperatures $\tau$ and $\tau_r$ control the trade-off: smaller values tighten the approximation but sharpen the gradients, potentially destabilizing optimization.
-A temperature annealing schedule---starting with large temperatures for a smooth landscape and progressively tightening---could mitigate this trade-off, though we leave this to future work.
+The relaxation temperatures control a tradeoff: smaller values tighten the approximation but sharpen the gradients, potentially destabilizing optimization.
+We investigate this tradeoff empirically in \secref{sec:relaxation_quality} by computing the hard coverage and revisit metrics at the optimizer's solution and comparing them to the relaxed values, as well as through PCA over the optimizer landscape (\figref{fig:landscape}).
 
 \subsection{Optimization}
 \label{sec:optimization}
 
-The full computational graph is:
-\begin{equation}
-    \underbrace{\vect{x}_i}_{\text{TLE}} \xrightarrow{\text{dSGP4}} \underbrace{\vect{r}_i(t)}_{\text{TEME}} \xrightarrow{\text{GMST}} \underbrace{\vect{r}_i^{\text{ECEF}}(t)}_{\text{ECEF}} \xrightarrow{\text{Eq.~\ref{eq:elevation}}} \alpha_{ij}(t) \xrightarrow{\text{Eqs.~\ref{eq:soft_visibility}--\ref{eq:mean_revisit}}} \mathcal{L}.
-    \label{eq:pipeline}
-\end{equation}
-Every operation is implemented in PyTorch~\citep{paszke2019pytorch}, so $\nabla_{\vect{x}_i} \mathcal{L}$ is computed via reverse-mode automatic differentiation.
+\paragraph{Computational graph.}
+The full forward pass composes the $\partial$SGP4 propagator with the four relaxations into a single differentiable graph (\figref{fig:graph}).
+Every operation is implemented in PyTorch~\citep{paszke2019pytorch}, so $\nabla_{\vect{\theta}_i} \mathcal{L}$ is computed via reverse-mode automatic differentiation through the entire graph.
+The Jacobian $\partial \vect{r}_i^{\text{TEME}} / \partial \vect{x}_i$ is handled inside $\partial$SGP4: it is dense and time-varying---a small change in RAAN rotates the entire orbital plane, affecting position at all future time steps.
 
-A practical complication is that $\partial$SGP4's \texttt{initialize\_tle} function rebuilds the computation graph from scratch at each call, producing a new ephemeral tensor for each satellite's elements.
-Standard optimizers like \texttt{torch.optim.Adam} track specific tensor objects and would lose their momentum state.
-We solve this by maintaining persistent parameter tensors that Adam tracks, and copying gradients from dSGP4's ephemeral tensors after each backward pass:
-\begin{equation}
-    \vect{p}_i.\text{grad} \leftarrow \text{clip}\bigl(\nabla_{\vect{x}_i^{\text{eph}}} \mathcal{L},\ [-5, 5]\bigr) \odot \vect{m},
-    \label{eq:grad_copy}
-\end{equation}
-where $\vect{p}_i$ is the persistent parameter tensor, $\vect{x}_i^{\text{eph}}$ is dSGP4's ephemeral tensor, and $\vect{m} \in \{0,1\}^9$ is a binary mask that zeroes gradients for fixed parameters (altitude, eccentricity, drag).
-Adam then steps on $\vect{p}_i$, and the updated values are written back to the TLE object before the next iteration.
+\paragraph{Interval constraints and reparameterization.} \label{para:interval_constraints}
 
-The per-iteration cost is $\mathcal{O}(NKM)$: $N$ satellite propagations over $K$ time steps, each evaluated against $M$ ground points.
+Without constraints, the optimizer trivially raises altitude until all ground points are permanently visible. We enforce interval constraints (e.g.\ LEO altitude bounds) via sigmoid reparameterization, mapping unconstrained variables $\vect{\theta}_i$ to valid elements $\vect{x}_i$:
+\begin{equation}
+    x_d = \ell_d + (u_d - \ell_d) \, \sigma(\theta_d) \quad \Rightarrow \quad \frac{\partial x_d}{\partial \theta_d} = (u_d - \ell_d) \, \sigma(\theta_d)(1 - \sigma(\theta_d)),
+    \label{eq:reparam}
+\end{equation}
+for bounded parameters (e.g.\ inclination) with bounds $[\ell_d, u_d]$, and $x_d = \theta_d$ (identity) for periodic parameters (RAAN, mean anomaly) where wrapping is natural.
+This reparameterization eliminates the need for projected gradient or constrained optimization methods.
+
+% \paragraph{Ephemeral graph and gradient bridging.}
+% A practical complication is that dSGP4's \texttt{initialize\_tle} function rebuilds the computation graph from scratch at each call, producing a new ephemeral tensor $\vect{x}_i^{\text{eph}}$ for each satellite's elements.
+% Standard optimizers like \texttt{torch.optim.Adam} track specific tensor objects and would lose their momentum state across graph rebuilds.
+% We solve this by maintaining persistent $\vect{\theta}_i$ tensors that Adam tracks, and bridging gradients from dSGP4's ephemeral tensors after each backward pass via \eqref{eq:reparam}:
+% \begin{equation}
+%     \vect{\theta}_i.\text{grad} \leftarrow \nabla_{\vect{x}_i^{\text{eph}}} \mathcal{L} \cdot \frac{\partial \vect{x}_i}{\partial \vect{\theta}_i},
+%     \label{eq:grad_bridge}
+% \end{equation}
+% where the Jacobian $\partial \vect{x}_i / \partial \vect{\theta}_i$ is diagonal (\eqref{eq:reparam}).
+% Adam then steps on $\vect{\theta}_i$, the updated values are mapped to $\vect{x}_i$ via \eqref{eq:reparam}, and the TLE is re-initialized for the next iteration.
+
+\paragraph{Plane constraints via gradient accumulation.}
+In many constellation designs, satellites within the same orbital plane share a common RAAN while maintaining individual mean anomalies.
+Rather than enforcing this as a hard constraint, we average these gradients per-plane: if satellites $i_1, \ldots, i_S$ in plane $p$ share a single RAAN parameter $\Omega_p$, the gradient is the average of per-satellite contributions:
+\begin{equation}
+    \frac{\partial \mathcal{L}}{\partial \Omega_p} = \frac{1}{S}\sum_{s=1}^{S} \frac{\partial \mathcal{L}}{\partial \Omega_{i_s}},
+    \label{eq:grad_accumulation}
+\end{equation}
+The averaged gradient is applied to the shared parameter, and the updated value is synchronized across all satellites in the plane after each optimizer step.
+This reduces the effective dimensionality without modifying the forward pass, and generalizes to any parameter-tying pattern: per-plane inclination sharing, altitude coupling across the constellation, or any grouping governed by mission constraints.
+
+% \paragraph{Computational cost.}
+% The per-iteration cost is $\mathcal{O}(NKJ)$: $N$ satellite propagations over $K$ time steps, each evaluated against $J$ ground points.

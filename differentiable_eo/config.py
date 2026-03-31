@@ -30,6 +30,7 @@ class Config:
     # Coverage model
     min_elevation_deg: float = 10.0
     softness_deg: float = 2.0
+    revisit_softness_deg: float = None  # separate softness for revisit; defaults to softness_deg
 
     # Revisit model
     revisit_logsumexp_temp: float = 10.0

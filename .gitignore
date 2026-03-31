@@ -1,0 +1,12 @@
+*.pdf
+*.synctex*
+*.out
+*.log
+*.fls
+*.fdb*
+*.blg
+*.bbl
+*.bkp
+*.DS_Store
+*cpython*
+*.pyc

@@ -3,46 +3,44 @@ Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
 The top-level auxiliary file: template.aux
 The style file: plainnat.bst
 Database file #1: references.bib
-Warning--empty journal in wertz2011space
-You've used 19 entries,
+You've used 21 entries,
             2773 wiz_defined-function locations,
-            699 strings with 8026 characters,
-and the built_in function-call counts, 8892 in all, are:
-= -- 737
-> -- 637
-< -- 9
-+ -- 214
-- -- 195
-* -- 741
-:= -- 1419
-add.period$ -- 57
-call.type$ -- 19
-change.case$ -- 118
-chr.to.int$ -- 19
-cite$ -- 39
-duplicate$ -- 390
-empty$ -- 672
-format.name$ -- 226
-if$ -- 1813
+            714 strings with 8822 characters,
+and the built_in function-call counts, 10234 in all, are:
+= -- 838
+> -- 769
+< -- 8
++ -- 258
+- -- 237
+* -- 883
+:= -- 1634
+add.period$ -- 65
+call.type$ -- 21
+change.case$ -- 138
+chr.to.int$ -- 21
+cite$ -- 42
+duplicate$ -- 441
+empty$ -- 758
+format.name$ -- 266
+if$ -- 2085
 int.to.chr$ -- 1
 int.to.str$ -- 1
-missing$ -- 22
-newline$ -- 103
-num.names$ -- 76
-pop$ -- 246
+missing$ -- 24
+newline$ -- 114
+num.names$ -- 84
+pop$ -- 287
 preamble$ -- 1
-purify$ -- 102
+purify$ -- 120
 quote$ -- 0
-skip$ -- 305
+skip$ -- 339
 stack$ -- 0
-substring$ -- 200
-swap$ -- 21
-text.length$ -- 1
+substring$ -- 204
+swap$ -- 28
+text.length$ -- 2
 text.prefix$ -- 0
 top$ -- 0
-type$ -- 194
-warning$ -- 1
-while$ -- 70
+type$ -- 216
+warning$ -- 0
+while$ -- 76
 width$ -- 0
-write$ -- 243
-(There was 1 warning)
+write$ -- 273

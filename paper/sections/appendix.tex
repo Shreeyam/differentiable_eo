@@ -1,0 +1,35 @@
+\appendix
+
+\section{Hyperparameter Tuning}
+\label{app:hyperparam_grid}
+
+This appendix provides the complete experimental setup and raw results for hyperparameter tuning described in \secref{sec:relaxation_quality}.
+
+\paragraph{Constellation configuration.}
+The tuning uses a 24-satellite constellation ($6 \times 4$) at \SI{550}{\kilo\metre} altitude with eccentricity $\approx 0$, inclination fixed at \SI{60}{\degree}, and RAAN and mean anomaly as free parameters.
+RAAN is shared within each plane, giving 30 effective degrees of freedom (6 unique RAANs + 24 mean anomalies).
+
+\paragraph{Optimization settings.}
+Each of the four initial configurations is optimized for 800 iterations with AdamW ($\eta = 10^{-2}$), propagation over \SI{24}{\hour} discretized into $K = 240$ time steps, a ground grid of $36 \times 72 = 2592$ points spanning $\pm$\SI{70}{\degree} latitude with $\cos(\text{lat})$ area weights, minimum elevation $\alpha_{\min} = \SI{10}{\degree}$, sigmoid temperature $\tau = \SI{2}{\degree}$, LogSumExp temperature $\beta = \SI{10}{\minute}$, revisit weight $\lambda = 0.1$, mean revisit reduction, and GMST randomization enabled.
+The optimization uses the \emph{default} relaxation parameters, not the calibrated ones---the goal is to obtain four diverse final solutions whose relative quality is known from the hard metrics.
+
+\paragraph{Initial RAAN configurations.}
+The four configurations are: near-uniform $[0, 60, 120, 180, 240, 300]$\SI{}{\degree}, moderate $[0, 30, 120, 200, 210, 300]$\SI{}{\degree}, clustered $[0, 10, 20, 30, 40, 50]$\SI{}{\degree}, and two-cluster $[0, 5, 180, 185, 270, 275]$\SI{}{\degree}.
+All use the same random mean anomaly initialization (NumPy \texttt{RandomState(42)}, uniform on $[0, 360)$\SI{}{\degree}).
+
+\paragraph{Grid search parameters.}
+The grid search evaluates the relaxed loss of all four final solutions under each combination of: coverage softness $\tau_{\text{cov}} \in \{1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0\}$\SI{}{\degree}, revisit softness $\tau_{\text{rev}} \in \{0.1, 0.25, 0.5, 0.75, 1.0, 1.5, 2.0\}$\SI{}{\degree}, LogSumExp temperature $\beta \in \{3.0, 5.0, 7.5, 10.0, 15.0, 20.0\}$\SI{}{\minute}, and revisit weight $\lambda \in \{0.05, 0.1, 0.2, 0.5, 1.0, 2.0\}$.
+This gives $7 \times 7 \times 6 \times 6 = 1764$ combinations, each requiring 4 gradient-free forward passes (one per solution), for 7056 evaluations total.
+
+\paragraph{Validity criterion.}
+A combination is \emph{valid} if the relaxed loss correctly ranks the good solutions below the bad:
+\begin{equation}
+    \max\bigl(\mathcal{L}_{\text{near-uniform}},\, \mathcal{L}_{\text{moderate}}\bigr) < \min\bigl(\mathcal{L}_{\text{clustered}},\, \mathcal{L}_{\text{two-cluster}}\bigr).
+    \label{eq:validity}
+\end{equation}
+The \emph{margin} is the difference between the right- and left-hand sides.
+Among valid combinations, we recommend the one that maximizes $\tau_{\text{cov}}$ (smoothest coverage gradients), then $\tau_{\text{rev}}$, with margin as tiebreaker.
+
+\paragraph{Reproducibility.}
+The experiment is implemented in \texttt{experiments/exp0\_hyperparam\_tuning.py}.
+The full list of valid combinations is written to \texttt{experiments/exp0\_valid\_combos.txt}, sorted by descending coverage softness.

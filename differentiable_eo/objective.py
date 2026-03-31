@@ -31,7 +31,8 @@ def compute_loss(tles: list, tsinces: torch.Tensor, gmst_array,
                  ground_weights: torch.Tensor = None,
                  revisit_reduce: str = 'mean',
                  revisit_spatial_tau: float = None,
-                 ground_unit: torch.Tensor = None):
+                 ground_unit: torch.Tensor = None,
+                 revisit_softness: float = None):
     """
     Propagate constellation and compute differentiable coverage + revisit loss.
 
@@ -44,7 +45,7 @@ def compute_loss(tles: list, tsinces: torch.Tensor, gmst_array,
         gmst_array: [T] GMST tensor or list of GMST values
         ground_ecef: [N_ground, 3] ground point positions
         min_el: minimum elevation angle (deg)
-        softness: sigmoid temperature (deg)
+        softness: sigmoid temperature (deg) for coverage objective
         revisit_tau: LogSumExp temperature for temporal max (minutes)
         revisit_weight: weight of revisit loss vs coverage loss
         ground_weights: optional [N_ground] weights for non-uniform targets
@@ -53,6 +54,8 @@ def compute_loss(tles: list, tsinces: torch.Tensor, gmst_array,
         revisit_spatial_tau: LogSumExp temperature for spatial max (minutes),
                              only used when revisit_reduce='max'. Defaults to revisit_tau.
         ground_unit: optional [N_ground, 3] precomputed unit vectors for ground points
+        revisit_softness: separate sigmoid temperature (deg) for revisit integrator.
+                          Defaults to softness if not specified.
 
     Returns:
         (loss, coverage_fraction, revisit_gap_minutes)
@@ -89,11 +92,18 @@ def compute_loss(tles: list, tsinces: torch.Tensor, gmst_array,
         total_coverage = all_any_covered.sum()
         coverage_frac = total_coverage / (n_time * n_ground)
 
+    # Revisit integrator: use separate softness if specified
+    if revisit_softness is not None and revisit_softness != softness:
+        rev_cov = soft_coverage(all_elevation, min_el, revisit_softness)
+        rev_any_covered = noisy_or(rev_cov, dim=1)
+    else:
+        rev_any_covered = all_any_covered
+
     # Leaky integrator: pre-allocate and write directly
-    gap_stack = torch.zeros(n_time, n_ground, dtype=all_any_covered.dtype)
-    gap = torch.zeros(n_ground, dtype=all_any_covered.dtype)
+    gap_stack = torch.zeros(n_time, n_ground, dtype=rev_any_covered.dtype)
+    gap = torch.zeros(n_ground, dtype=rev_any_covered.dtype)
     for t_idx in range(n_time):
-        gap = leaky_integrator_step(gap, dt, all_any_covered[t_idx])
+        gap = leaky_integrator_step(gap, dt, rev_any_covered[t_idx])
         gap_stack[t_idx] = gap
 
     # Revisit: LogSumExp soft-max over time

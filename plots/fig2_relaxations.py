@@ -25,8 +25,8 @@ def plot_soft_visibility(path):
     x = np.linspace(-15, 15, 300)
     sigmoid = 1.0 / (1.0 + np.exp(-x / 2.0))
     hard = np.where(x >= 0, 1.0, 0.0)
-    ax.plot(x, hard, 'b--', lw=1.5, label='Step')
-    ax.plot(x, sigmoid, 'r-', lw=1.5, label=r'$\tau=2$')
+    ax.plot(x, hard, '--', lw=1.5, label='Step', color='#3F51B5')
+    ax.plot(x, sigmoid, '-', lw=1.5, label=r'$\tau=2$', color='#E91E63')
     ax.set_xlabel(r'$\alpha - \alpha_{\min}$ [deg]')
     ax.set_ylabel(r'$c_{ij}$')
     ax.set_xlim(-15, 15)
@@ -40,16 +40,16 @@ def plot_soft_visibility(path):
 def plot_noisy_or(path):
     fig, ax = plt.subplots(figsize=(W, H))
     c1 = np.linspace(0, 1, 100)
-    for c2, color, label in [(0.0, 'r', r'$c_2=0$'),
-                              (0.3, 'orange', r'$c_2=0.3$'),
-                              (0.7, 'purple', r'$c_2=0.7$')]:
+    for c2, color, label in [(0.0, '#009688', r'$c_2=0$'),
+                              (0.3, '#E91E63', r'$c_2=0.3$'),
+                              (0.7, '#3F51B5', r'$c_2=0.7$')][::-1]:
         ax.plot(c1, 1.0 - (1.0 - c1) * (1.0 - c2), color=color, lw=1.5, label=label)
     ax.set_xlabel(r'$c_1$')
-    ax.set_ylabel(r'$C = 1 - \prod_{i=1}^2 (1-c_i)$')
+    ax.set_ylabel(r'$1 - \prod_{i=1}^2 (1-c_i)$', fontsize=8)
     ax.set_xlim(0, 1)
     ax.set_ylim(-0.05, 1.1)
     ax.legend(loc='lower right', fontsize=6)
-    fig.savefig(path, bbox_inches='tight')
+    fig.savefig(path)
     plt.close(fig)
     print(f'Saved {path}')
 
@@ -61,13 +61,13 @@ def plot_leaky_integrator(path):
                     0, 7, 14, 21, 28, 35, 42,
                     0, 7, 14, 21, 28, 35, 42, 49], dtype=float)
     coverage_t = np.array([6, 13])
-    ax.plot(t, gap, 'r-', lw=1.5)
-    ax.plot(coverage_t, [0, 0], 'b^', ms=5, label='Coverage event')
+    ax.plot(t, gap, '-', lw=1.5, color='#E91E63')
+    ax.plot(coverage_t, [0, 0], '^', ms=5, label='Coverage event', color='#3F51B5')
     ax.set_xlabel('Time step')
     ax.set_ylabel(r'Gap $\Delta_j$ [min]')
     ax.set_xlim(0, 20)
     ax.set_ylim(-5, 85)
-    ax.legend()
+    ax.legend(fontsize=6, loc='upper left')
     fig.savefig(path, bbox_inches='tight')
     plt.close(fig)
     print(f'Saved {path}')
@@ -78,8 +78,8 @@ def plot_logsumexp(path):
     tau = np.linspace(1, 50, 200)
     values = np.array([20.0, 45.0, 30.0])
     lse = tau * np.log(np.sum(np.exp(values[:, None] / tau[None, :]), axis=0))
-    ax.plot(tau, lse, 'r-', lw=1.5, label='LSE')
-    ax.axhline(45, color='b', ls='--', lw=1.5, label='True max')
+    ax.plot(tau, lse, '-', lw=1.5, label='LSE', color='#E91E63')
+    ax.axhline(45, color='#3F51B5', ls='--', lw=1.5, label='True max')
     ax.set_xlabel(r'Temperature $\tau_r$')
     ax.set_ylabel(r'$\widetilde{\Delta}^{\max}$')
     ax.set_xlim(0.5, 50)
@@ -99,3 +99,6 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+
+ml_colors = ['#3F51B5', '#E91E63', '#009688', '#FFC107', '#673AB7', '#03A9F4']
