@@ -601,7 +601,7 @@ def main():
                          frames=len(snapshots), interval=100, blit=False)
 
     anim_path = os.path.join(os.path.dirname(__file__), 'exp2_animation.gif')
-    anim.save(anim_path, writer=PillowWriter(fps=20), dpi=150)
+    anim.save(anim_path, writer=PillowWriter(fps=20), dpi=100)
     print(f"Animation saved to {anim_path}")
     plt.close(fig_anim)
 

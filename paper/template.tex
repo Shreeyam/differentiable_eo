@@ -21,6 +21,8 @@
 \usepackage{algorithm}
 \usepackage{algpseudocode}
 \usepackage{todonotes}
+\usepackage{fontawesome5}
+\usepackage{placeins}
 
 \usetikzlibrary{arrows.meta, positioning, shapes.geometric, calc, decorations.markings, patterns, fit, backgrounds}
 \usepgfplotslibrary{groupplots}
@@ -66,9 +68,12 @@ pdfkeywords={satellite constellation, differentiable programming, orbit propagat
 \maketitle
 
 \begin{abstract}
+Satellite constellation design requires optimizing orbital parameters across multiple satellites to maximize mission specific metrics. For many types of mission, it is desirable to maximize coverage and minimize revisit gaps over ground targets. Existing approaches to constellation design either restrict the design space to symmetric parametric families such as Walker constellations, or rely on metaheuristic methods that require significant compute and many iterations. Gradient-based optimization has been considered intractable due to the non-differentiability of coverage and revisit metrics, which involve binary visibility indicators and discrete max operations. We introduce four continuous relaxations: soft sigmoid visibility, noisy-OR multi-satellite aggregation, leaky integrator revisit gap tracking, and LogSumExp soft-maximum, which when composed with the $\partial$SGP4 differentiable orbit propagator, yield a fully differentiable pipeline from orbital elements to mission-level objectives. We show that this scheme can recover Walker-Delta geometry from irregular initializations, and discovers elliptical Molniya-like orbits with apogee dwell over northern latitudes, from only gradients.
 \end{abstract}
 
 \noindent\textbf{Keywords:} satellite constellation design, differentiable programming, orbit propagation
+
+\noindent\faGithub\hspace{0.5em}\url{https://github.com/shreeyam/differentiable_eo}
 
 \input{sections/introduction}
 \input{sections/related_work}
@@ -76,6 +81,7 @@ pdfkeywords={satellite constellation, differentiable programming, orbit propagat
 \input{sections/experiments}
 \input{sections/conclusion}
 
+\FloatBarrier
 \bibliographystyle{plainnat}
 \bibliography{relaxed_eo}
 

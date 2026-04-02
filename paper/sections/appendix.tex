@@ -3,7 +3,7 @@
 \section{Hyperparameter Tuning}
 \label{app:hyperparam_grid}
 
-This appendix provides the complete experimental setup and raw results for hyperparameter tuning described in \secref{sec:relaxation_quality}.
+This appendix provides the complete experimental setup and raw results for hyperparameter tuning described in \secref{sec:tightness}.
 
 \paragraph{Constellation configuration.}
 The tuning uses a 24-satellite constellation ($6 \times 4$) at \SI{550}{\kilo\metre} altitude with eccentricity $\approx 0$, inclination fixed at \SI{60}{\degree}, and RAAN and mean anomaly as free parameters.
@@ -22,14 +22,13 @@ The grid search evaluates the relaxed loss of all four final solutions under eac
 This gives $7 \times 7 \times 6 \times 6 = 1764$ combinations, each requiring 4 gradient-free forward passes (one per solution), for 7056 evaluations total.
 
 \paragraph{Validity criterion.}
-A combination is \emph{valid} if the relaxed loss correctly ranks the good solutions below the bad:
+Each of the four optimizations converges to a different local minimum. A hyperparameter combination is \emph{valid} if the relaxed loss at these local minima preserves the same ordering as the hard loss---i.e., solutions that are better under the hard metrics should also be better under the relaxed loss. Since the hard metrics group the four solutions into two tiers (near-uniform and moderate are better; clustered and two-cluster are worse), validity requires:
 \begin{equation}
-    \max\bigl(\mathcal{L}_{\text{near-uniform}},\, \mathcal{L}_{\text{moderate}}\bigr) < \min\bigl(\mathcal{L}_{\text{clustered}},\, \mathcal{L}_{\text{two-cluster}}\bigr).
+    \max\bigl(\tilde{\mathcal{L}}_{\text{near-uniform}},\, \tilde{\mathcal{L}}_{\text{moderate}}\bigr) < \min\bigl(\tilde{\mathcal{L}}_{\text{clustered}},\, \tilde{\mathcal{L}}_{\text{two-cluster}}\bigr).
     \label{eq:validity}
 \end{equation}
 The \emph{margin} is the difference between the right- and left-hand sides.
-Among valid combinations, we recommend the one that maximizes $\tau_{\text{cov}}$ (smoothest coverage gradients), then $\tau_{\text{rev}}$, with margin as tiebreaker.
+Among valid combinations, we utilize the one that maximizes $\tau_{\text{cov}}$ (smoothest coverage gradients), then $\tau_{\text{rev}}$, with margin as tiebreaker.
 
 \paragraph{Reproducibility.}
-The experiment is implemented in \texttt{experiments/exp0\_hyperparam\_tuning.py}.
-The full list of valid combinations is written to \texttt{experiments/exp0\_valid\_combos.txt}, sorted by descending coverage softness.
+All experiments can be reproduced from the repository found at \url{https://github.com/shreeyam/differentiable_eo}.

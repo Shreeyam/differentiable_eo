@@ -335,6 +335,8 @@ def main():
     lines2, labels2 = ax_conv_rev.get_legend_handles_labels()
     ax_conv.legend(lines1 + lines2, labels1 + labels2, fontsize=6, ncol=2, loc='upper left')
     ax_conv.set_xlim(0, N_ITERATIONS)
+    ax_conv.set_ylim(0, 120)
+    ax_conv_rev.set_ylim(0, 300)
     ax_conv.grid(True, alpha=0.2)
 
     fig_conv.tight_layout()
@@ -487,7 +489,7 @@ def main():
         ax_gt.scatter(target_lons, target_lats, s=3, c='white', edgecolors='k',
                      linewidths=0.2, alpha=0.3, transform=ccrs.PlateCarree(), zorder=4)
 
-        ax_gt.set_title(title)
+        # ax_gt.set_title(title)
         plt.colorbar(im, ax=ax_gt, shrink=0.8, pad=0.02, label='Visibility count')
         ax_gt.set_xticks(range(-180, 181, 60), crs=ccrs.PlateCarree())
         ax_gt.set_yticks(range(-90, 91, 30), crs=ccrs.PlateCarree())

@@ -32,7 +32,7 @@
 \label{sec:setup}
 
 We consider a constellation of $N$ satellites, each parameterized by a two-line element (TLE) set. 
-Each satellite brings up to a maximum of six degree of freedom corresponding to their orbital elements, $[a,~e,~i,~\Omega,~\omega,~\mathcal{M}]^\top$, corresponding to semi-major axis, eccentricity, inclination, right ascension of the ascending node (RAAN), argument of periapsis, and mean anomaly, respectively.
+Each satellite brings up to six degrees of freedom corresponding to their orbital elements, $[a,~e,~i,~\Omega,~\omega,~\mathcal{M}]^\top$, corresponding to semi-major axis, eccentricity, inclination, right ascension of the ascending node (RAAN), argument of periapsis, and mean anomaly, respectively.
 We universally fix the remaining TLE parameters corresponding to mean motion $n$, drag term $B^*$, and secular rates $\dot{n}$, $\ddot{n}$ to keep the constellation configuration static over time.
 
 Given a grid of $J$ ground target points $\mathcal{G} = \{\vect{g}_1, \ldots, \vect{g}_J\}$ on the Earth's surface and a time horizon $[0, T]$ discretized into $K$ steps with spacing $\Delta t = T/(K-1)$, we seek to maximize coverage over the Earth and minimize the worst-case revisit gap.
@@ -139,7 +139,7 @@ We replace it with the LogSumExp smooth maximum~\citep{boyd_convex_2023} (\figre
     \widetilde{\Delta}_j^{\max} = \beta \cdot \log\!\left(\sum_{k=1}^{K} \exp\!\left(\frac{\tilde{\Delta}_j(t_k)}{\beta}\right)\right),
     \label{eq:logsumexp}
 \end{equation}
-where $\beta$ is a sharpness parameter, for which we assign $\beta = \SI{30}{\minute}$.
+where $\beta$ is a sharpness parameter, for which we assign $\beta = \SI{10}{\minute}$.
 This relaxation satisfies the inequality $\max_k \tilde{\Delta}_j(t_k) \leq \widetilde{\Delta}_j^{\max} \leq \max_k \tilde{\Delta}_j(t_k) + \beta \log K$, providing an upper bound.
 The mean worst-case revisit across all ground points is then
 \begin{equation}
@@ -147,9 +147,9 @@ The mean worst-case revisit across all ground points is then
     \label{eq:mean_revisit}
 \end{equation}
 
-In practice, the coverage and revisit objectives have different sensitivity to the sigmoid temperature $\tau$ in \eqref{eq:soft_visibility}: phantom coverage is an additive bias for coverage but multiplicatively resets the revisit integrator. We therefore split $\tau$ into $\tau_{\text{cov}}$ for the coverage objective and $\tau_{\text{rev}}$ for the revisit computation, calibrated in \secref{sec:relaxation_quality}.
+In practice, the coverage and revisit objectives have different sensitivity to the sigmoid temperature $\tau$ in \eqref{eq:soft_visibility}: phantom coverage is an additive bias for coverage but multiplicatively resets the revisit integrator. We therefore split $\tau$ into $\tau_{\text{cov}}$ for the coverage objective and $\tau_{\text{rev}}$ for the revisit computation, calibrated in \secref{sec:tightness}.
 
-\begin{figure}[htb]
+\begin{figure}[!htb]
     \centering
     % STEP 1: The Images
     % This resizebox forces the whole row of images to be exactly textwidth wide.
@@ -210,12 +210,15 @@ The leaky integrator retains a fraction $(1 - \tilde{C}_j) \approx 0.01$ of the 
 Over time, this residual prevents the gap from fully resetting, producing relaxed gaps that are \emph{longer} than the true gaps during sustained coverage.
 The LogSumExp adds a further upward bias of at most $\beta \log K$.
 
-These effects compete: phantom coverage shortens gaps near the visibility boundary, while incomplete resets and the LogSumExp overestimate lengthen them.
+These effects compete: phantom coverage shortens gaps near the visibility boundary, while incomplete resets and the LogSumExp lengthen them.
 The net bias depends on the specific geometry and is neither a guaranteed upper nor lower bound on the true objective.
-This asymmetric sensitivity---additive for coverage, multiplicative for revisit---motivates the separated sigmoid temperatures discussed in \secref{sec:logsumexp}.
 
-The relaxation temperatures control a tradeoff: smaller values tighten the approximation closer to the true hard metrics, but sharpen the gradients, potentially destabilizing optimization.
-We investigate this tradeoff empirically in \secref{sec:relaxation_quality} by computing the hard coverage and revisit metrics at the optimizer's solution and comparing them to the relaxed values, as well as through PCA over the optimizer landscape (\figref{fig:landscape}).
+\paragraph{Split sigmoid temperatures.}
+\label{sec:relaxation_quality}
+When a single temperature $\tau$ is shared, phantom coverage from clustered below-threshold satellites compounds through the noisy-OR and partially resets the leaky integrator, causing the relaxed loss to incorrectly favor clustered solutions.
+Decoupling into a coverage temperature $\tau_{\text{cov}}$ and a tighter revisit temperature $\tau_{\text{rev}}$ resolves this.
+A grid search confirms that $\tau_{\text{cov}} \gg \tau_{\text{rev}}$ correctly ranks solutions while maintaining smooth coverage gradients (Appendix~\ref{app:hyperparam_grid}).
+In practice, the hyperparameters used in experiments favor smooth gradients and reliable convergence over exact global ranking (\figref{fig:landscape}).
 
 \subsection{Optimization}
 \label{sec:optimization}

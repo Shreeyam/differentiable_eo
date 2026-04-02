@@ -1,74 +1,19 @@
 \section{Experiments}
 \label{sec:experiments}
 
-We first calibrate the relaxation hyperparameters to ensure the relaxed loss is representative of true solutions. We then evaluate the framework on three experiments: a toy problem validating gradient correctness, a uniform-coverage baseline that recovers known-optimal geometries, and a weighted target optimization on a problem class where parametric families fail.
+We evaluate the framework on three experiments: a toy problem validating gradient correctness, a uniform-coverage baseline that recovers known-optimal geometries, and a weighted target optimization on a problem class where parametric families fail.
 
 \subsection{Common Setup}
 \label{sec:common_setup}
 
-All experiments use $\partial$SGP4~\citep{acciarini_closing_2025} for orbit propagation with PyTorch autograd for gradient computation.
+All experiments use $\partial$SGP4~\citep{acciarini_closing_2025} for orbit propagation with PyTorch autograd for gradient computation, and AdamW with learning rate $\eta = 10^{-2}$  for optimization.
 Circular orbits are assumed and held stationary by zeroing the mean-motion gradient.
 The minimum elevation angle for all ground points is $\alpha_{\min} = \SI{10}{\degree}$.
-As described in \secref{sec:relaxation_quality}, we use separate sigmoid temperatures for coverage and revisit: the coverage temperature $\tau_{\text{cov}}$ controls gradient smoothness, while a tighter revisit temperature $\tau_{\text{rev}}$ prevents the leaky integrator from being gamed by phantom coverage.
+As discussed in \secref{sec:tightness}, we use separate sigmoid temperatures for coverage and revisit: the coverage temperature $\tau_{\text{cov}}$ controls gradient smoothness, while a tighter revisit temperature $\tau_{\text{rev}}$ prevents the leaky integrator from being gamed by phantom coverage.
+To select these quantities and the remaining hyperparameters ($\beta$, $\lambda$), we optimize a 24-satellite constellation from four initializations ranging from well-spread to heavily clustered, then grid-search over temperature and weight combinations to find settings that correctly rank the resulting solutions by their hard metrics.
+This calibration confirms that $\tau_{\text{cov}} \gg \tau_{\text{rev}}$ is required for correct ranking, though in practice we favor slightly softer values that improve convergence at the expense of absolute correctness (Appendix~\ref{app:hyperparam_grid}).
 Coverage and revisit metrics are evaluated over a \SI{24}{\hour} propagation horizon discretized into $K = 240$ time steps on a ground grid of $36 \times 72 = 2592$ points spanning $\pm\SI{70}{\degree}$ latitude.
 Specific relaxation parameters, optimizer settings, and revisit weight $\lambda$ vary per experiment and are stated in each subsection.
-
-\subsection{Hyperparameter Tuning}
-\label{sec:relaxation_quality}
-
-The composed relaxation has four hyperparameters that define the loss surface geometry: the coverage sigmoid temperature $\tau_{\text{cov}}$, the revisit sigmoid temperature $\tau_{\text{rev}}$ (introduced in \secref{sec:soft_visibility}), the LogSumExp temperature $\beta$, and the revisit weight $\lambda$.
-We exclude optimizer dynamics (learning rate, momentum) from this calibration, as they affect convergence speed but not the shape of the loss landscape.
-We calibrate by running four optimizations of a 24-satellite constellation ($6 \times 4$, inclination fixed at \SI{60}{\degree}, RAAN and mean anomaly free, per-plane RAAN sharing) from different initial RAAN configurations:
-\begin{enumerate}
-    \item \textbf{Near-uniform}: $\Omega = [0, 60, 120, 180, 240, 300]$\SI{}{\degree} (close to even spacing),
-    \item \textbf{Moderate}: $\Omega = [0, 30, 120, 200, 210, 300]$\SI{}{\degree} (irregular but spread),
-    \item \textbf{Clustered}: $\Omega = [0, 10, 20, 30, 40, 50]$\SI{}{\degree} (all planes within \SI{50}{\degree}),
-    \item \textbf{Two-cluster}: $\Omega = [0, 5, 180, 185, 270, 275]$\SI{}{\degree} (three tight clusters).
-\end{enumerate}
-All tuning runs use the same random mean anomaly initialization and default relaxation parameters ($\tau = \SI{2}{\degree}$, $\beta = \SI{10}{\minute}$, $\lambda = 0.1$) for 800 AdamW iterations.
-
-\paragraph{Ranking failure with shared softness.}
-The near-uniform and moderate initializations converge to solutions with hard mean revisit gaps of $\sim$\SI{48}{\minute}, while the clustered and two-cluster initializations find solutions with gaps of $\sim$\SI{68}{\minute}.
-However, under the default relaxation parameters, the relaxed loss of the \SI{68}{\minute} solutions is \emph{lower} than that of the \SI{48}{\minute} solutions---the relaxation ranks the worse solutions as better.
-
-This ranking failure is caused by the shared sigmoid temperature: the same $\tau$ controls both the coverage objective and the revisit leaky integrator (\eqref{eq:leaky_integrator}).
-A soft sigmoid with $\tau = \SI{2}{\degree}$ assigns coverage $c_{ij} \approx 0.27$ to a satellite at $\alpha = \alpha_{\min} - \SI{2}{\degree}$.
-For the coverage fraction (\eqref{eq:coverage_fraction}), this phantom coverage has minimal effect because it is a small additive bias.
-But in the leaky integrator, it \emph{multiplicatively} resets the gap: $\Delta_j \leftarrow \Delta_j \cdot (1 - C_j)$.
-When multiple clustered satellites each contribute partial coverage at low elevation, the noisy-OR combines them into substantial phantom coverage ($C_j \gg 0$) that partially resets the gap timer at every time step.
-The clustered solutions benefit disproportionately from this effect.
-
-\paragraph{Split-softness resolution.}
-We decouple the sigmoid temperature into $\tau_{\text{cov}}$ for the coverage objective and $\tau_{\text{rev}}$ for the revisit integrator, then grid-search over $\tau_{\text{cov}} \in \{1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0\}$\SI{}{\degree}, $\tau_{\text{rev}} \in \{0.1, 0.25, 0.5, 0.75, 1.0, 1.5, 2.0\}$\SI{}{\degree}, $\beta \in \{3, 5, 7.5, 10, 15, 20\}$\SI{}{\minute}, and $\lambda \in \{0.05, 0.1, 0.2, 0.5, 1.0, 2.0\}$ (1764 combinations, each requiring only four gradient-free forward passes).
-A combination is \emph{valid} if it correctly ranks the good solutions (near-uniform and moderate) below the bad solutions (clustered and two-cluster).
-
-\tabref{tab:hyperparam_tuning} summarizes the findings.
-No valid combinations exist when $\tau_{\text{cov}} = \tau_{\text{rev}} \geq \SI{2}{\degree}$ (the original shared-softness regime).
-Decoupling the temperatures resolves the ranking failure: combinations with $\tau_{\text{cov}} \geq \SI{3}{\degree}$ and $\tau_{\text{rev}} \leq \SI{0.5}{\degree}$ correctly rank solutions while maintaining smooth coverage gradients.
-See Appendix~\ref{app:hyperparam_grid} for the full grid search results.
-
-\paragraph{Smoothness--correctness tradeoff.}
-The valid hyperparameter combinations tend toward tight revisit sigmoids ($\tau_{\text{rev}} \leq \SI{1}{\degree}$), which produce correct global rankings but sharp, poorly conditioned gradients.
-In practice, optimization converges more reliably with softer values (e.g., $\tau_{\text{cov}} = \SI{5}{\degree}$, $\tau_{\text{rev}} = \SI{2}{\degree}$) that lie outside the valid regime.
-This is not contradictory: the calibration tests \emph{global} ranking correctness across qualitatively different solutions, but gradient-based optimization only requires \emph{local} gradient quality within a basin of attraction.
-Softer relaxations smooth the loss surface, improving convergence, while the underlying basin structure still guides the optimizer toward good solutions.
-The hyperparameters used in subsequent experiments reflect this tradeoff, favoring reliable convergence over exact global ranking.
-
-\begin{table}[htb]
-\centering
-\caption{Split-softness calibration results.  Valid = relaxed loss correctly ranks solutions with better hard metrics below those with worse hard metrics.  Decoupling the coverage and revisit sigmoid temperatures allows smooth coverage gradients with a tight revisit sigmoid.}
-\label{tab:hyperparam_tuning}
-\begin{tabular}{llc}
-\toprule
-\textbf{Regime} & \textbf{Softness range} & \textbf{Valid combos} \\
-\midrule
-Shared $\tau_{\text{cov}} = \tau_{\text{rev}} \geq \SI{2}{\degree}$ & Original setting & 0 \\
-Shared $\tau_{\text{cov}} = \tau_{\text{rev}} = \SI{1}{\degree}$ & Tighter, sharp gradients & Some (with $\beta \leq 5$, $\lambda \geq 0.2$) \\
-Split: $\tau_{\text{cov}} \geq \SI{2}{\degree}$, $\tau_{\text{rev}} \leq \SI{0.5}{\degree}$ & Smooth + tight & Many \\
-Split: $\tau_{\text{cov}} \geq \SI{3}{\degree}$, $\tau_{\text{rev}} \leq \SI{1}{\degree}$ & Recommended & Many \\
-\bottomrule
-\end{tabular}
-\end{table}
 
 \subsection{Experiment 1: Toy Problem}
 \label{sec:toy}
@@ -77,47 +22,42 @@ To validate that the relaxed objectives produce correct gradients and results, w
 We use relaxation parameters $\tau_{\text{cov}} = \SI{5}{\degree}$, $\tau_{\text{rev}} = \SI{2}{\degree}$, $\beta = \SI{10}{\minute}$, $\lambda = 2.0$, and AdamW with learning rate $\eta = 10^{-2}$.
 
 The optimal solution is known analytically: the two satellites should be separated by \SI{180}{\degree} in mean anomaly to maximize coverage and revisit rate within the shared orbital plane.
-This reduces the problem to two free parameters, allowing the full loss landscape to be visualized as a 2D contour plot.
+This reduces the problem to two free parameters, allowing the full loss landscape to be visualized.
 
 \paragraph{Loss landscape.}
 We evaluate both the relaxed loss and hard (discrete) metrics on a dense grid over $(\mathcal{M}_1, \mathcal{M}_2) \in [0, 360)^2$\SI{}{\degree}.  
-\figref{fig:toy_landscape} shows the resulting landscapes: the top row displays the relaxed loss, coverage, and revisit, while the bottom row shows the corresponding hard metrics.
+\figref{fig:toy_landscape} shows the resulting landscapes.
 Both landscapes exhibit a clear global minimum along the anti-diagonal $|\mathcal{M}_1 - \mathcal{M}_2| = \SI{180}{\degree}$, with no local minima.
-The relaxed landscape is visibly smoother than the hard landscape while preserving the same basin structure, confirming that the relaxations provide a smooth surface amenable to gradient descent without distorting the underlying objective.
+The relaxed landscape is visibly smoother than the hard landscape while preserving the same basin structure, confirming that the relaxations provide a smooth surface amenable to gradient descent without significantly distorting the underlying objective.
 
 \paragraph{Gradient descent trajectory.}
-Starting from $\mathcal{M}_1 = \SI{120}{\degree}$, $\mathcal{M}_2 = \SI{130}{\degree}$ (a \SI{10}{\degree} separation), Adam converges to $|\mathcal{M}_1 - \mathcal{M}_2| \approx \SI{180}{\degree}$ within 400 iterations.
+Starting from $\mathcal{M}_1 = \SI{179}{\degree}$, $\mathcal{M}_2 = \SI{181}{\degree}$, the optimizer converges to $|\mathcal{M}_1 - \mathcal{M}_2| \approx \SI{180}{\degree}$ within 800 iterations.
 The trajectory (overlaid in white on \figref{fig:toy_landscape}) follows the gradient field smoothly toward the minimum without oscillation.
 This validates that the composed relaxations produce well-behaved gradients---a prerequisite for the higher-dimensional experiments that follow.
 
-\begin{figure}[htb]
+\begin{figure}[!htb]
     \centering
     \includegraphics[width=\textwidth]{figures/exp1_gradient_validation.pdf}
-    \caption{Loss landscape for the two-satellite mean anomaly optimization.  \textbf{Top row:} relaxed loss, coverage, and revisit.  \textbf{Bottom row:} corresponding hard (discrete) metrics.  The global minimum lies along $|\mathcal{M}_1 - \mathcal{M}_2| = \SI{180}{\degree}$ (dashed line).  The gradient descent trajectory (white line, circle = start, star = end) converges from a \SI{10}{\degree} separation to the optimum.  The relaxed landscape is smoother than the hard landscape while preserving the same basin structure.}
+    \caption{Two-satellite mean anomaly optimization. \textbf{Top:} relaxed metrics. \textbf{Bottom:} hard metrics. The optimizer (white line) converges to the optimal \SI{180}{\degree} separation. The relaxed landscape preserves the basin structure of the hard landscape while providing smooth gradients.}
     \label{fig:toy_landscape}
 \end{figure}
 
 \subsection{Experiment 2: Uniform Coverage Baseline}
 \label{sec:uniform}
 
-Before applying the method to non-uniform objectives, we establish a baseline on the well-understood uniform coverage problem.
-This validates that the optimizer can recover known-optimal geometries and provides a point of comparison for the weighted-target experiment.
-
-We optimize $N = 24$ satellites in 6 orbital planes (4 per plane) with inclination fixed at \SI{60}{\degree}.
+We now apply our gradient-based scheme to a well-understood uniform coverage problem. We optimize $N = 24$ satellites in 6 orbital planes (4 per plane) with inclination fixed at \SI{60}{\degree}.
 RAAN and mean anomaly are free, with RAAN shared within each plane, yielding $6 + 24 = 30$ effective degrees of freedom.
-We use AdamW with learning rate $\eta = 10^{-2}$ and revisit weight $\lambda = 0.1$.
 
 \paragraph{Initial configuration.}
-We deliberately initialize the constellation with irregular RAAN offsets $[0, 30, 120, 200, 210, 300]$\SI{}{\degree} (far from uniform \SI{60}{\degree} spacing) and random mean anomalies (seed 42).
-The classical Walker-delta $24/6/1$ pattern uses \SI{60}{\degree} RAAN spacing.
+We deliberately initialize the constellation with irregular RAAN offsets $[0, 30, 120, 200, 210, 300]$\SI{}{\degree} far from uniform spacing, and random mean anomalies. The classical Walker-delta $24/6/1$ pattern uses \SI{60}{\degree} RAAN spacing.
 
 \paragraph{Results.}
-Over 1000 iterations, the optimizer recovers near-uniform RAAN spacing from the irregular initialization, approaching the Walker-delta geometry without domain-specific heuristics.
-\tabref{tab:uniform_results} summarizes the metrics; \figref{fig:convergence} shows convergence, spatial coverage redistribution, and ground tracks.
+Over 1000 iterations, the optimizer recovers near-uniform RAAN spacing from the irregular initialization, approaching the Walker-delta geometry without domain-specific inductive biases.
+\tabref{tab:uniform_results} summarizes the metrics; \figref{fig:convergence} shows convergence, spatial coverage redistribution, and final RAAN/MA configuration space.
 
-\begin{table}[htb]
+\begin{table}[!htb]
 \centering
-\caption{Walker recovery: 24-satellite constellation ($6 \times 4$), 1000 iterations, \SI{550}{\kilo\metre} fixed altitude, inclination fixed at \SI{60}{\degree}. Soft metrics are the relaxed surrogate values; hard metrics are the discrete ground truth.}
+\caption{Recovery of Walker Delta constellation through gradient optimization of randomly initialized 24-satellite constellation ($6 \times 4$), 1000 iterations, \SI{550}{\kilo\metre} fixed altitude, inclination fixed at \SI{60}{\degree}.}
 \label{tab:uniform_results}
 \begin{tabular}{lrrr}
 \toprule
@@ -126,13 +66,13 @@ Over 1000 iterations, the optimizer recovers near-uniform RAAN spacing from the 
 Hard coverage [\%] & 32.41 & 40.34 & 40.33 \\
 Hard mean max revisit [min] & 136.2 & 48.0 & 48.0 \\
 \midrule
-Soft coverage [\%] & 41.86 & 41.96 & 50.32 \\
+Soft coverage [\%] & 41.86 & 50.32 & 50.32 \\
 Soft mean max revisit [min] & 127.5 & 73.5 & 73.5 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\begin{figure}[htb]
+\begin{figure}[!htb]
     \centering
     \begin{minipage}[t]{0.48\textwidth}
         \centering
@@ -145,22 +85,18 @@ Soft mean max revisit [min] & 127.5 & 73.5 & 73.5 \\
         \includegraphics[width=\textwidth]{figures/exp2_raan_ma.pdf}\\[-2pt]
         {\small (b) RAAN vs mean anomaly}
     \end{minipage}
-    \caption{Walker recovery experiment. \textbf{(a)} Convergence of soft and hard coverage and revisit metrics over 1000 iterations, with Walker 24/6/1 reference (dashed). The optimizer matches Walker performance by iteration $\sim$400. \textbf{(b)} RAAN vs mean anomaly trajectories. Hollow circles show the initial configuration, solid circles the optimized result, and stars the Walker reference.}
+    \caption{Walker recovery experiment. \textbf{(a)} Convergence of coverage and revisit over 1000 iterations, with Walker 24/6/1 reference (dashed). \textbf{(b)} RAAN vs mean anomaly trajectories (hollow = initial, solid = optimized, stars = Walker). The optimizer recovers Walker-equivalent geometry (in rotational symmetry) from an irregular initialization.}
     \label{fig:convergence}
 \end{figure}
 
-\subsection{Loss Landscape Analysis}
-\label{sec:landscape}
+\paragraph{Loss landscape.}
+To investigate the structure of the loss landscape, we visualize it using per-trajectory PCA~\citep{li_visualizing_2018}: for each of the four initializations from the hyperparameter calibration (Appendix~\ref{app:hyperparam_grid}), we project the optimization trajectory onto its two principal components and evaluate the loss on that 2D slice.
+\figref{fig:landscape} shows smooth basins in all four cases, confirming that the relaxations produce a landscape amenable to gradient descent. However, the global view reveals multi-modal structure: the clustered initializations converge to distinct local minima with worse hard metrics than the well-spread ones, indicating that initialization still matters despite the smooth local landscape.
 
-Following \citet{li_visualizing_2018}, we visualize the loss landscape by computing per-trajectory principal components and evaluating the landscape on each trajectory's own 2D slice through the 30-dimensional parameter space.
-Unlike a single global PCA projection---which discards the dimensions that matter for individual trajectories---each slice faithfully represents the landscape that its optimizer actually navigated.
-\figref{fig:landscape} shows smooth, well-conditioned basins across all four initializations from \secref{sec:relaxation_quality}, in contrast to the ``extremely poorly conditioned'' landscape reported by \citet{paek_optimization_2019} when using finite-difference gradients through discrete objectives.
-This confirms that the poor conditioning observed in prior work was a consequence of the non-differentiable objective formulation, not the underlying physics.
-
-\begin{figure*}[htb]
+\begin{figure*}[!htb]
     \centering
     \includegraphics[width=\textwidth]{figures/exp3_loss_landscape.pdf}
-    \caption{Loss landscape visualization~\citep{li_visualizing_2018}.  \textbf{Left column:} global view along random directions (zoomed out) revealing the broader landscape structure.  \textbf{Columns 2--5:} per-trajectory PCA slices, each showing the landscape along that trajectory's own principal components (white line, circle = start, star = end).  \textbf{Top row:} relaxed total loss.  \textbf{Bottom row:} hard (discrete) total loss.  The per-trajectory views show smooth basins, while the global view reveals the multi-modal structure of the full parameter space.}
+    \caption{Loss landscape visualization~\citep{li_visualizing_2018}. \textbf{Left:} global view along random directions. \textbf{Columns 2--5:} per-trajectory PCA slices (white line = optimizer path). \textbf{Top/bottom:} relaxed and hard loss, respectively. Per-trajectory views show smooth basins; the global view reveals multi-modal structure.}
     \label{fig:landscape}
 \end{figure*}
 
@@ -174,23 +110,24 @@ We demonstrate this by optimizing a small constellation for coverage and revisit
 We sample 500 ground targets from European country boundaries (GeoJSON), weighted by $\cos(\text{lat})$ to correct for area distortion.
 The constellation consists of 4 satellites in 2 orbital planes (2 per plane).
 Unlike Experiment~2, we free all orbital geometry parameters: inclination ($\iota \in [30, 90]$\SI{}{\degree}), RAAN, mean anomaly, argument of perigee, and orbital shape.
-To allow the optimizer to explore eccentric orbits without producing unphysical perigee altitudes, we reparameterize eccentricity and altitude jointly as (perigee altitude, excess altitude), where perigee $\in [400, 600]$\SI{}{\kilo\metre} and excess $\in [0, 1500]$\SI{}{\kilo\metre}, guaranteeing perigee $\geq$ \SI{400}{\kilo\metre} by construction.
+To allow the optimizer to explore eccentric orbits without producing unphysical perigee altitudes, we reparameterize eccentricity and altitude jointly as (perigee altitude, excess altitude), where perigee $\in [400, 800]$\SI{}{\kilo\metre} and excess $\in [0, 11000]$\SI{}{\kilo\metre}, guaranteeing perigee $\geq$ \SI{400}{\kilo\metre} by construction.
 Inclination, RAAN, eccentricity, argument of perigee, and altitude are shared within each plane; mean anomaly is free per satellite, giving 12 effective degrees of freedom.
-We use AdamW with $\eta = 10^{-2}$, $\lambda = 1.0$, and run for 2000 iterations.
+We use $\lambda = 1.0$, and run for 3000 iterations.
 
 \paragraph{Results.}
 Starting from a Walker-like circular initialization at \SI{550}{\kilo\metre}, the optimizer discovers a qualitatively different geometry (\tabref{tab:weighted_results}).
 Both planes converge to highly elliptical orbits ($e \approx 0.40$) with argument of perigee $\omega \approx \SI{270}{\degree}$, placing apogee over the northern hemisphere where the satellite dwells longest.
-The resulting orbits have perigee $\approx$ \SI{685}{\kilo\metre} and apogee $\approx$ \SI{10000}{\kilo\metre}---a Molniya-class highly elliptical orbit discovered entirely from gradients, with no domain-specific heuristics.
+The resulting orbits have perigee $\approx$ \SI{685}{\kilo\metre} and apogee $\approx$ \SI{10000}{\kilo\metre}---a Molniya-class highly elliptical orbit discovered entirely from gradients, with no domain-specific inductive biases.
 The inclination converges to $\sim$\SI{63}{\degree}--\SI{65}{\degree}, near the critical inclination (\SI{63.4}{\degree}) at which $J_2$ perturbations do not precess the argument of perigee.
 
 The optimized constellation achieves 99.3\% coverage and 3.7~min mean revisit over Europe, compared to 10.0\% coverage and 247.5~min for a Walker 4/2/1 baseline (\tabref{tab:weighted_results}).
+The comparison is not between equal orbit regimes: the Walker baseline is constrained to circular LEO while the optimizer is free to explore eccentric orbits. The result demonstrates that, given this freedom, the optimizer escapes the LEO basin and discovers a qualitatively different and far more effective geometry for regional coverage.
 
 \figref{fig:europe_density} shows the visibility density (number of timesteps each ground bin is within \SI{10}{\degree} elevation of any satellite).
 The optimized constellation concentrates nearly all coverage in the northern hemisphere over Europe, while the Walker baseline distributes coverage uniformly but achieves far less density.
 The orbital period of $\sim$\SI{210}{\minute} produces approximately 7 revolutions per sidereal day, creating a near-resonant repeating ground track.
 
-\begin{table}[htb]
+\begin{table}[!htb]
 \centering
 \caption{Regional target optimization: 4 satellites (2 planes $\times$ 2), 3000 iterations, all orbital geometry parameters free with coupled perigee/apoapsis constraints.}
 \label{tab:weighted_results}
@@ -206,13 +143,13 @@ Soft mean max revisit [min] & 208.9 & 54.9 \\
 \end{tabular}
 \end{table}
 
-\begin{table}[htb]
+\begin{table}[!htb]
 \centering
 \caption{Per-plane orbital geometry discovered by the optimizer for the Europe target set. Both planes converge to eccentric, Molniya-like orbits with apogee over the northern hemisphere ($\omega \approx \SI{270}{\degree}$). The Walker baseline uses circular orbits at \SI{550}{\kilo\metre}.}
 \label{tab:exp3_geometry}
 \begin{tabular}{lrrrrr}
 \toprule
-& $\iota$ [deg] & $\Omega$ [deg] & $e$ & $\omega$ [deg] & Perigee / apogee [km] \\
+& $\iota$ \textbf{[deg]} & $\Omega$ \textbf{[deg]} & $e$ & $\omega$ \textbf{[deg]} & \textbf{Perigee / Apogee [km]} \\
 \midrule
 Plane 0 & 62.6 & 336.6 & 0.398 & 276.2 & 685 / 10011 \\
 Plane 1 & 65.3 & 155.6 & 0.402 & 266.5 & 687 / 10193 \\
@@ -222,22 +159,22 @@ Walker (all) & 60.0 & uniform & 0.001 & --- & 550 / 550 \\
 \end{tabular}
 \end{table}
 
-\begin{figure}[htb]
+\begin{figure}[htbp]
     \centering
     \includegraphics[width=0.48\textwidth]{figures/exp3_convergence.pdf}
     \caption{Convergence of the Europe target optimization over 3000 iterations. The optimizer rapidly improves both coverage and revisit over the Walker baseline (dashed).}
     \label{fig:exp3_convergence}
 \end{figure}
 
-\begin{figure*}[htb]
+\begin{figure}[!htb]
     \centering
-    \includegraphics[width=\textwidth]{figures/exp3_groundtrack_optimized.pdf}\\[2pt]
+    \includegraphics[width=.9\textwidth]{figures/exp3_groundtrack_optimized.pdf}\\[2pt]
     {\small (a) Optimized for Europe}\\[8pt]
-    \includegraphics[width=\textwidth]{figures/exp3_groundtrack_walker.pdf}\\[2pt]
+    \includegraphics[width=.9\textwidth]{figures/exp3_groundtrack_walker.pdf}\\[2pt]
     {\small (b) Walker 4/2/1 baseline}
-    \caption{Visibility density over a \SI{24}{\hour} window: number of timesteps each ground bin is within \SI{10}{\degree} elevation of any satellite. \textbf{(a)} The optimized constellation concentrates nearly all coverage over European latitudes via highly elliptical orbits ($e \approx 0.4$, $\omega \approx \SI{270}{\degree}$), with apogee dwell over the northern hemisphere. \textbf{(b)} The Walker baseline distributes coverage symmetrically but achieves far less density over Europe.}
+    \caption{Visibility density over \SI{24}{\hour}. \textbf{(a)} The optimized constellation concentrates coverage over Europe via eccentric orbits with apogee dwell over northern latitudes. \textbf{(b)} The Walker baseline distributes coverage uniformly but achieves far less density over the target region.}
     \label{fig:europe_density}
-\end{figure*}
+\end{figure}
 
 % \subsection{Computational Cost}
 % \label{sec:cost}
