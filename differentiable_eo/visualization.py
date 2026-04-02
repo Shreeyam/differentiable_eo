@@ -508,7 +508,7 @@ def plot_loss_landscape_pca(optimizer, z_center, d1, d2, trajectories,
 
 def plot_loss_landscapes_per_trajectory(optimizer, trajectory_configs, grid_size=50,
                                          padding=0.3, global_view=None,
-                                         save_path=None, fig_width=6.5):
+                                         save_path=None, fig_width=10):
     """
     Visualize loss landscape on per-trajectory PCA slices.
 
@@ -560,10 +560,11 @@ def plot_loss_landscapes_per_trajectory(optimizer, trajectory_configs, grid_size
         })
 
     n_cols = len(columns)
-    subplot_size = fig_width / (n_cols + 0.15)  # account for colorbar column
-    fig_height = 2 * subplot_size + 0.6
+    subplot_size = fig_width / (n_cols + 0.15)
+    fig_height = 2 * subplot_size + 0.4
     fig = plt.figure(figsize=(fig_width, fig_height))
-    gs = fig.add_gridspec(2, n_cols + 1, width_ratios=[1] * n_cols + [0.03], wspace=0.3)
+    gs = fig.add_gridspec(2, n_cols + 1, width_ratios=[1] * n_cols + [0.03],
+                          wspace=0.35, hspace=0.4)
     axes_arr = np.array([[fig.add_subplot(gs[r, c]) for c in range(n_cols)] for r in range(2)])
     cbar_axes = [fig.add_subplot(gs[r, n_cols]) for r in range(2)]
 
@@ -649,26 +650,24 @@ def plot_loss_landscapes_per_trajectory(optimizer, trajectory_configs, grid_size
             ax.contour(A, B, data, levels=levels, colors='k', linewidths=0.3, alpha=0.4)
             last_cs[row_idx] = cs
 
-            # Overlay trajectories
+            # Overlay trajectories (exp1 style: white line, circle start, orange star end)
             for ovl_label, proj_a, proj_b, ovl_color in col_cfg['overlays']:
-                ax.plot(proj_a, proj_b, '-', color=ovl_color, lw=1.0, alpha=0.9)
-                ax.plot(proj_a[0], proj_b[0], 'o', color=ovl_color,
-                        markerfacecolor='none', markersize=5, markeredgewidth=1.0)
-                ax.plot(proj_a[-1], proj_b[-1], '*', color=ovl_color,
-                        markersize=8, markeredgecolor='k', markeredgewidth=0.3)
-                arrow_idx = len(proj_a) * 2 // 5
-                if 0 < arrow_idx < len(proj_a) - 1:
-                    ax.annotate('', xy=(proj_a[arrow_idx + 1], proj_b[arrow_idx + 1]),
-                                xytext=(proj_a[arrow_idx], proj_b[arrow_idx]),
-                                arrowprops=dict(arrowstyle='->', color=ovl_color, lw=1.0))
+                ax.plot(proj_a, proj_b, '-', color='w', lw=1.5, alpha=0.8)
+                ax.plot(proj_a[0], proj_b[0], 'wo', markersize=5,
+                        markeredgecolor='k', markeredgewidth=0.5)
+                ax.plot(proj_a[-1], proj_b[-1], '*', markersize=8,
+                        markerfacecolor='orange', markeredgecolor='k', markeredgewidth=0.5)
 
-            ax.tick_params(labelsize=5)
             ax.set_xlabel("PC1")
-            ax.set_ylabel("PC2")
-            if row_idx == 0:
-                ax.set_title(f'{col_cfg["label"]}\n({row_label})', fontsize=7)
+            if col_idx == 0:
+                ax.set_ylabel("PC2")
             else:
-                ax.set_title(f'({row_label})', fontsize=7)
+                ax.set_ylabel("")
+                ax.set_yticklabels([])
+            if row_idx == 0:
+                ax.set_title(f'{col_cfg["label"]}\n({row_label} loss)')
+            else:
+                ax.set_title(f'({row_label} loss)')
 
     # Restore original z values
     for re, z_orig in zip(optimizer.reparam_elements, z_orig_list):
@@ -679,11 +678,10 @@ def plot_loss_landscapes_per_trajectory(optimizer, trajectory_configs, grid_size
         elements = optimizer.reparam_elements[i].to_elements()
         update_tle_from_elements(tle, elements)
 
-    # Colorbars in dedicated axes (don't steal space from subplots)
+    # Colorbars in dedicated axes
     for row_idx in range(2):
         if last_cs[row_idx] is not None:
-            cbar = fig.colorbar(last_cs[row_idx], cax=cbar_axes[row_idx])
-            cbar.ax.tick_params(labelsize=5)
+            fig.colorbar(last_cs[row_idx], cax=cbar_axes[row_idx])
 
     fig.tight_layout()
     fig.savefig(save_path, dpi=300, bbox_inches='tight')

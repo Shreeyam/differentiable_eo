@@ -104,8 +104,8 @@ def free_all_geometry_specs():
     specs[IDX_ARGPO] = UnboundedConstraint()
     # Coupled constraint: perigee ∈ [400, 600] km, excess (apogee - perigee) ∈ [0, 1500] km
     coupled = PeriapsisApoapsisConstraint(
-        perigee_bounds_km=(400.0, 600.0),
-        excess_bounds_km=(0.0, 1500.0),
+        perigee_bounds_km=(400.0, 800.0),
+        excess_bounds_km=(0.0, 11000.0),  # capped to keep period < 225 min (dSGP4 limit)
     )
     specs[IDX_NO_KOZAI] = coupled  # register on one index
     specs[IDX_ECCO] = coupled      # same object on both — ReparameterizedElements detects this
@@ -146,7 +146,7 @@ def main():
     N_SATS_PER_PLANE = 2
     N_SATS = N_PLANES * N_SATS_PER_PLANE
     ALT_KM = 550.0
-    N_ITERATIONS = 2000
+    N_ITERATIONS = 3000
     N_TIME_STEPS = 240
     MIN_EL = 10.0
     PROP_HOURS = 24.0
@@ -224,7 +224,7 @@ def main():
     )
 
     # ---- Override ground grid with Europe targets ----
-    torch.manual_seed(7)  # seed GMST randomization for reproducibility
+    torch.manual_seed(13)  # seed GMST randomization for reproducibility
     opt = ConstellationOptimizer(config)
     opt.ground_ecef = ground_ecef
     opt.ground_weights = ground_weights
@@ -318,9 +318,9 @@ def main():
     ax_conv.plot(result.hard_eval_iters, result.hard_cov_history, 'o-',
                  color=COV_COLOR, lw=1.5, markersize=2, label='Hard coverage')
     ax_conv.axhline(walker_metrics['hard_cov'], color=COV_COLOR, ls='--', alpha=0.5,
-                    label=f'Walker ({walker_metrics["hard_cov"]:.1f}\\%)')
+                    label=f'Walker ({walker_metrics["hard_cov"]:.1f}%)')
     ax_conv.set_xlabel('Iteration')
-    ax_conv.set_ylabel('Coverage [\\%]', color=COV_COLOR)
+    ax_conv.set_ylabel('Coverage [%]', color=COV_COLOR)
     ax_conv.tick_params(axis='y', labelcolor=COV_COLOR)
 
     ax_conv_rev.plot(result.revisit_history, '-', color=REV_COLOR, lw=1.2, alpha=0.3, label='Soft revisit')
@@ -345,6 +345,7 @@ def main():
     # (c) Ground tracks on cartopy map (optimized vs Walker)
     import cartopy.crs as ccrs
     import cartopy.feature as cfeature
+    from cartopy.mpl.ticker import LongitudeFormatter, LatitudeFormatter
 
     dense_tsinces = torch.linspace(0, prop_min, 1000)
     dense_gmst = make_gmst_array(dense_tsinces)
@@ -374,21 +375,41 @@ def main():
 
     # Compute visibility footprint density: for each satellite position,
     # mark all ground bins within the min elevation footprint
-    lon_bins = np.linspace(-180, 180, 181)
-    lat_bins = np.linspace(-90, 90, 91)
+    lon_bins = np.linspace(-180, 180, 361)
+    lat_bins = np.linspace(-90, 90, 181)
     lon_centers = (lon_bins[:-1] + lon_bins[1:]) / 2
     lat_centers = (lat_bins[:-1] + lat_bins[1:]) / 2
     GRID_LON, GRID_LAT = np.meshgrid(lon_centers, lat_centers)  # [n_lat, n_lon]
 
     # Precompute grid ECEF positions
     R_E = 6378.137
+
+    # Precompute ECEF for all 4 corners of each grid cell
+    def latlon_to_ecef(lat_rad, lon_rad):
+        return np.stack([
+            R_E * np.cos(lat_rad) * np.cos(lon_rad),
+            R_E * np.cos(lat_rad) * np.sin(lon_rad),
+            R_E * np.sin(lat_rad),
+        ], axis=-1)
+
+    # 4 corners per cell: (lat_lo, lon_lo), (lat_lo, lon_hi), (lat_hi, lon_lo), (lat_hi, lon_hi)
+    n_lat_cells = len(lat_bins) - 1
+    n_lon_cells = len(lon_bins) - 1
+    corner_ecefs = []  # list of 4 arrays, each [n_cells, 3]
+    corner_units = []
+    for dlat, dlon in [(0, 0), (0, 1), (1, 0), (1, 1)]:
+        lat_idx = np.repeat(np.arange(n_lat_cells) + dlat, n_lon_cells)
+        lon_idx = np.tile(np.arange(n_lon_cells) + dlon, n_lat_cells)
+        clat = np.radians(lat_bins[lat_idx])
+        clon = np.radians(lon_bins[lon_idx])
+        ecef = latlon_to_ecef(clat, clon)
+        corner_ecefs.append(ecef)
+        corner_units.append(ecef / np.linalg.norm(ecef, axis=-1, keepdims=True))
+
+    # Also keep center for backwards compat
     grid_lat_rad = np.radians(GRID_LAT.ravel())
     grid_lon_rad = np.radians(GRID_LON.ravel())
-    grid_ecef = np.stack([
-        R_E * np.cos(grid_lat_rad) * np.cos(grid_lon_rad),
-        R_E * np.cos(grid_lat_rad) * np.sin(grid_lon_rad),
-        R_E * np.sin(grid_lat_rad),
-    ], axis=-1)  # [n_cells, 3]
+    grid_ecef = latlon_to_ecef(grid_lat_rad, grid_lon_rad)
     grid_unit = grid_ecef / np.linalg.norm(grid_ecef, axis=-1, keepdims=True)
 
     def compute_visibility_density(tles, tsinces_dense, gmst_dense, min_el_deg=MIN_EL):
@@ -422,12 +443,15 @@ def main():
                     -sg * pos_teme[0] + cg * pos_teme[1],
                     pos_teme[2],
                 ])
-                # Compute elevation to all grid cells
-                diff = pos_ecef - grid_ecef  # [n_cells, 3]
-                dist = np.linalg.norm(diff, axis=-1)
-                elev = np.arcsin(np.clip(
-                    np.sum(diff * grid_unit, axis=-1) / dist, -1, 1))
-                density += (elev >= min_el_rad).astype(float)
+                # Compute elevation at all 4 corners — bin counts only if all 4 visible
+                all_visible = np.ones(len(corner_ecefs[0]), dtype=bool)
+                for c_ecef, c_unit in zip(corner_ecefs, corner_units):
+                    diff = pos_ecef - c_ecef
+                    dist = np.linalg.norm(diff, axis=-1)
+                    elev = np.arcsin(np.clip(
+                        np.sum(diff * c_unit, axis=-1) / dist, -1, 1))
+                    all_visible &= (elev >= min_el_rad)
+                density += all_visible.astype(float)
 
         return density.reshape(GRID_LAT.shape)
 
@@ -444,7 +468,7 @@ def main():
             ('optimized', result.final_tles, 'Optimized for Europe'),
             ('walker', walker_tles, f'Walker {N_SATS}/{N_PLANES}/{WALKER_F}')]):
 
-        fig_gt = plt.figure(figsize=(6, 3.5))
+        fig_gt = plt.figure(figsize=(10, 4.5))
         ax_gt = fig_gt.add_subplot(111, projection=ccrs.PlateCarree())
         ax_gt.set_global()
         ax_gt.add_feature(cfeature.LAND, facecolor='#f5f5f5', edgecolor='#cccccc', linewidth=0.3)
@@ -456,7 +480,7 @@ def main():
         im = ax_gt.imshow(all_densities[idx], cmap='turbo',
                           vmin=0, vmax=vmax, alpha=0.7,
                           extent=[-180, 180, -90, 90], origin='lower',
-                          interpolation='bilinear',
+                          interpolation='nearest',
                           transform=ccrs.PlateCarree(), zorder=2)
 
         # Europe target points
@@ -464,9 +488,14 @@ def main():
                      linewidths=0.2, alpha=0.3, transform=ccrs.PlateCarree(), zorder=4)
 
         ax_gt.set_title(title)
-        plt.colorbar(im, ax=ax_gt, shrink=0.7, pad=0.02, label='Track density')
-        ax_gt.gridlines(draw_labels=True, linewidth=0.2, alpha=0.3,
-                       xlocs=range(-180, 181, 60), ylocs=range(-90, 91, 30))
+        plt.colorbar(im, ax=ax_gt, shrink=0.8, pad=0.02, label='Visibility count')
+        ax_gt.set_xticks(range(-180, 181, 60), crs=ccrs.PlateCarree())
+        ax_gt.set_yticks(range(-90, 91, 30), crs=ccrs.PlateCarree())
+        ax_gt.set_xticklabels([f'{abs(x)}$^\\circ$W' if x < 0 else f'{x}$^\\circ$E' if x > 0 else '0$^\\circ$'
+                               for x in range(-180, 181, 60)])
+        ax_gt.set_yticklabels([f'{abs(y)}$^\\circ$S' if y < 0 else f'{y}$^\\circ$N' if y > 0 else '0$^\\circ$'
+                               for y in range(-90, 91, 30)])
+        ax_gt.grid(linestyle='--', color='gray', alpha=0.5, linewidth=0.3)
 
         fig_gt.tight_layout()
         gt_path = os.path.join(paper_dir, f'exp3_groundtrack_{tag}.pdf')

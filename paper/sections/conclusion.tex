@@ -1,20 +1,19 @@
 \section{Conclusions and Future Work}
 \label{sec:conclusion}
 
-Gradient-based optimization of satellite constellations has been considered intractable due to the discrete, non-differentiable nature of coverage and revisit objectives.
-We showed that this intractability is an artifact of the objective formulation: by introducing four continuous relaxations and composing them with the differentiable $\partial$SGP4 orbit propagator, the entire pipeline becomes amenable to first-order optimization.
-The relaxed surrogate closely tracks the discrete objective (\secref{sec:relaxation_quality}) and produces well-conditioned gradients where finite-difference approaches through discrete objectives~\citep{paek2019recon} do not.
+In conclusion, we show that gradient-based methods when composed with the appropriate relaxations and propagation techniques, are viable for design of satellite constellations.
 
-On uniform coverage, the optimizer recovers Walker-optimal geometry from arbitrary initialization.
-On weighted regional targets, it discovers asymmetric constellations---including eccentric orbits that dwell over target latitudes---that significantly outperform Walker baselines, without any domain-specific heuristics.
+The relaxed metrics introduced in this work track hard metrics (\secref{sec:relaxation_quality}) and produce well-conditioned gradients, in contrast to previous attempts using finite-difference approaches~\citep{paek_optimization_2019}.
+
+On uniform coverage objectives with plane-accumulation constraints, we can derive Walker-Delta constellations from purely our differentiable objectives.
+
+On weighted regional targets, the optimizer can discover asymmetric geometries, such as eccentric orbits that dwell over target latitudes, without requiring any hand-crafted inductive biases.
 
 \paragraph{Limitations.}
-The current approach optimizes a single-epoch snapshot and does not account for long-term perturbations (J2 RAAN drift, atmospheric drag) that alter constellation geometry over months.
-The time step discretization introduces approximation error in the revisit metrics.
-While the loss landscape appears smooth near our solutions, we cannot rule out the existence of better local minima elsewhere in the parameter space.
-The discrete design variables (number of planes, satellites per plane) remain non-differentiable and must be set by the user or searched over separately.
+The current approach optimizes a single-epoch snapshot and does not account for long-term perturbations (J2 RAAN drift, atmospheric drag) that alter constellation geometry over longer time horizons. While excluded in this work by zeroing out relevant gradients, these factors can be included with appropriate metrics to evaluate correctness, for example, total spacecraft lifetime above a certain altitude in the case of atmospheric drag.
+In this work, we discretize time steps, which introduces approximation error in the revisit metrics, requiring significant propagation over a fixed time horizon to acquire gradients. This can introduce noise into the gradients and require more compute, although still likely much less than for a different optimization method, like an evolutionary algorithm.
+While the contributions in this work allow for differentiable objectives, design variables for the constellation design problem (number of planes, satellites per plane) remain non-differentiable and must be set by the user or searched over separately. In practice,
 
 \paragraph{Future work.}
 Incorporating J2 secular perturbations would enable optimization of long-term constellation maintenance, potentially discovering geometries that exploit RAAN drift for improved coverage evolution.
-Multi-objective Pareto optimization would allow explicit trade-offs between competing mission requirements.
-More broadly, the framework extends to constellation augmentation---optimizing new satellites to complement an existing fleet---a setting that completely breaks the symmetry assumptions of parametric families.
+While this work shows one application of differentiable objectives for space mission design, the applications even in constellation design are numerous. For example, investigating optimal placement of satellites given hetereogenous instruments with different field of view, optimal satellite constellation reconfiguration for new objectives, satellite constellation design with differently weighted ground points with different minimum elevations, and more.

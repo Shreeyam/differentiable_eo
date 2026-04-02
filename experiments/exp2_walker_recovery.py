@@ -324,9 +324,9 @@ def main():
     ax_conv.plot(result.hard_eval_iters, result.hard_cov_history, 'o-',
                  color=COV_COLOR, lw=1.5, markersize=2, label='Hard coverage')
     ax_conv.axhline(walker_cov, color=COV_COLOR, ls='--', alpha=0.5,
-                    label=f'Walker ({walker_cov:.1f}\\%)')
+                    label=f'Walker ({walker_cov:.1f}%)')
     ax_conv.set_xlabel('Iteration')
-    ax_conv.set_ylabel('Coverage [\\%]', color=COV_COLOR)
+    ax_conv.set_ylabel('Coverage [%]', color=COV_COLOR)
     ax_conv.tick_params(axis='y', labelcolor=COV_COLOR)
 
     ax_conv_rev.plot(result.revisit_history, '-', color=REV_COLOR, lw=1.2, alpha=0.3, label='Soft revisit')

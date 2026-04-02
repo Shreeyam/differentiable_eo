@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2025.3.8)  30 MAR 2026 22:06
+This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2025.3.8)  1 APR 2026 20:36
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -874,7 +874,7 @@ File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 ) (/usr/local/texlive/2025/texmf-dist/tex/latex/microtype/mt-msb.cfg
 File: mt-msb.cfg 2005/06/01 v1.0 microtype config. file: AMS symbols (b) (RS)
 )
-<orcid.pdf, id=92, 102.3825pt x 102.3825pt>
+<orcid.pdf, id=96, 102.3825pt x 102.3825pt>
 File: orcid.pdf Graphic file (type pdf)
 <use orcid.pdf>
 Package pdftex.def Info: orcid.pdf  used on input line 67.
@@ -884,7 +884,7 @@ Package microtype Info: Loading generic protrusion settings for font family
 (microtype)             For optimal results, create family-specific settings.
 (microtype)             See the microtype manual for details.
  (./sections/introduction.tex
-<figures/overview.pdf, id=101, 448.5558pt x 268.12169pt>
+<figures/overview.pdf, id=105, 448.5558pt x 268.12169pt>
 File: figures/overview.pdf Graphic file (type pdf)
 <use figures/overview.pdf>
 Package pdftex.def Info: figures/overview.pdf  used on input line 27.
@@ -900,10 +900,8 @@ LaTeX Warning: `h' float specifier changed to `ht'.
 
 {/usr/local/texlive/2025/texmf-var/fonts/map/pdftex/updmap/pdftex.map}{/usr/local/texlive/2025/texmf-dist/fonts/enc/dvips/base/8r.enc}{/usr/local/texlive/2025/texmf-dist/fonts/enc/dvips/cm-super/cm-super-t1.enc} <./orcid.pdf>]
 
-[2 <./figures/overview.pdf>]
-Package hyperref Info: bookmark level for unknown todo defaults to 0 on input line 29.
-) (./sections/method.tex
-<figures/graph.pdf, id=187, 460.6008pt x 115.3911pt>
+[2 <./figures/overview.pdf>]) (./sections/method.tex
+<figures/graph.pdf, id=192, 460.6008pt x 115.3911pt>
 File: figures/graph.pdf Graphic file (type pdf)
 <use figures/graph.pdf>
 Package pdftex.def Info: figures/graph.pdf  used on input line 9.
@@ -913,110 +911,121 @@ Package pdftex.def Info: figures/graph.pdf  used on input line 9.
 [3 <./figures/graph.pdf>]
 
 [4]
-<figures/fig2a_soft_visibility.pdf, id=273, 129.03554pt x 110.32419pt>
+<figures/fig2a_soft_visibility.pdf, id=278, 129.03554pt x 110.32419pt>
 File: figures/fig2a_soft_visibility.pdf Graphic file (type pdf)
 <use figures/fig2a_soft_visibility.pdf>
 Package pdftex.def Info: figures/fig2a_soft_visibility.pdf  used on input line 162.
 (pdftex.def)             Requested size: 99.83807pt x 85.35826pt.
-<figures/fig2b_noisy_or.pdf, id=274, 136.43011pt x 109.21307pt>
+<figures/fig2b_noisy_or.pdf, id=279, 136.43011pt x 109.21307pt>
 File: figures/fig2b_noisy_or.pdf Graphic file (type pdf)
 <use figures/fig2b_noisy_or.pdf>
 Package pdftex.def Info: figures/fig2b_noisy_or.pdf  used on input line 162.
 (pdftex.def)             Requested size: 106.63155pt x 85.35826pt.
-<figures/fig2c_leaky_integrator.pdf, id=275, 132.72998pt x 109.21307pt>
+<figures/fig2c_leaky_integrator.pdf, id=280, 132.72998pt x 109.21307pt>
 File: figures/fig2c_leaky_integrator.pdf Graphic file (type pdf)
 <use figures/fig2c_leaky_integrator.pdf>
 Package pdftex.def Info: figures/fig2c_leaky_integrator.pdf  used on input line 162.
 (pdftex.def)             Requested size: 103.73958pt x 85.35826pt.
-<figures/fig2d_logsumexp.pdf, id=276, 132.11888pt x 109.21307pt>
+<figures/fig2d_logsumexp.pdf, id=281, 132.11888pt x 109.21307pt>
 File: figures/fig2d_logsumexp.pdf Graphic file (type pdf)
 <use figures/fig2d_logsumexp.pdf>
 Package pdftex.def Info: figures/fig2d_logsumexp.pdf  used on input line 162.
 (pdftex.def)             Requested size: 103.26196pt x 85.35826pt.
 
 
-[5 <./figures/fig2a_soft_visibility.pdf> <./figures/fig2b_noisy_or.pdf> <./figures/fig2c_leaky_integrator.pdf> <./figures/fig2d_logsumexp.pdf>]) (./sections/experiments.tex
+[5 <./figures/fig2a_soft_visibility.pdf> <./figures/fig2b_noisy_or.pdf> <./figures/fig2c_leaky_integrator.pdf> <./figures/fig2d_logsumexp.pdf>]
 
-[6]
-Underfull \hbox (badness 3815) in paragraph at lines 43--45
+[6]) (./sections/experiments.tex
+Underfull \hbox (badness 3815) in paragraph at lines 42--44
  []\T1/ptm/b/n/10 (+20) Split-softness res-o-lu-tion.[] \T1/ptm/m/n/10 (+20) We de-cou-ple the sig-moid tem-per-a-ture into $\OML/cmm/m/it/10 ^^\[]$ \T1/ptm/m/n/10 (+20) for the cov-er-age ob-jec-tive
  []
 
 
-Underfull \hbox (badness 1577) in paragraph at lines 43--45
+Underfull \hbox (badness 1577) in paragraph at lines 42--44
 \T1/ptm/m/n/10 (+20) and $\OML/cmm/m/it/10 ^^\[]$ \T1/ptm/m/n/10 (+20) for the re-visit in-te-gra-tor, then grid-search over $\OML/cmm/m/it/10 ^^\[] \OMS/cmsy/m/n/10 2 f\OT1/cmr/m/n/10 1\OML/cmm/m/it/10 :\OT1/cmr/m/n/10 0\OML/cmm/m/it/10 ; \OT1/cmr/m/n/10 1\OML/cmm/m/it/10 :\OT1/cmr/m/n/10 5\OML/cmm/m/it/10 ; \OT1/cmr/m/n/10 2\OML/cmm/m/it/10 :\OT1/cmr/m/n/10 0\OML/cmm/m/it/10 ; \OT1/cmr/m/n/10 2\OML/cmm/m/it/10 :\OT1/cmr/m/n/10 5\OML/cmm/m/it/10 ; \OT1/cmr/m/n/10 3\OML/cmm/m/it/10 :\OT1/cmr/m/n/10 0\OML/cmm/m/it/10 ; \OT1/cmr/m/n/10 4\OML/cmm/m/it/10 :\OT1/cmr/m/n/10 0\OML/cmm/m/it/10 ; \OT1/cmr/m/n/10 5\OML/cmm/m/it/10 :\OT1/cmr/m/n/10 0\OMS/cmsy/m/n/10 g$$[]$\T1/ptm/m/n/10 (+20) , $\OML/cmm/m/it/10 ^^\[] \OMS/cmsy/m/n/10 2
  []
 
 
 
 [7]
-<figures/exp1_gradient_validation.pdf, id=440, 577.63116pt x 344.37248pt>
+<figures/exp1_gradient_validation.pdf, id=447, 577.63116pt x 344.37248pt>
 File: figures/exp1_gradient_validation.pdf Graphic file (type pdf)
 <use figures/exp1_gradient_validation.pdf>
-Package pdftex.def Info: figures/exp1_gradient_validation.pdf  used on input line 96.
+Package pdftex.def Info: figures/exp1_gradient_validation.pdf  used on input line 95.
 (pdftex.def)             Requested size: 469.75499pt x 280.05942pt.
 
-Underfull \hbox (badness 10000) in paragraph at lines 112--114
+Underfull \hbox (badness 10000) in paragraph at lines 111--113
  []\T1/ptm/b/n/10 (+20) Initial con-fig-u-ra-tion.[] \T1/ptm/m/n/10 (+20) We de-lib-er-ately ini-tial-ize the con-stel-la-tion with ir-reg-u-lar RAAN off-sets
  []
 
 
-Underfull \vbox (badness 1590) has occurred while \output is active []
-
-
 
 [8]
-<figures/exp2_convergence.pdf, id=452, 272.92865pt x 238.16103pt>
+<figures/exp2_convergence.pdf, id=459, 272.92865pt x 238.16103pt>
 File: figures/exp2_convergence.pdf Graphic file (type pdf)
 <use figures/exp2_convergence.pdf>
-Package pdftex.def Info: figures/exp2_convergence.pdf  used on input line 140.
+Package pdftex.def Info: figures/exp2_convergence.pdf  used on input line 139.
 (pdftex.def)             Requested size: 225.48038pt x 196.76144pt.
-<figures/exp2_raan_ma.pdf, id=453, 273.87335pt x 236.95135pt>
+<figures/exp2_raan_ma.pdf, id=460, 273.87335pt x 236.95135pt>
 File: figures/exp2_raan_ma.pdf Graphic file (type pdf)
 <use figures/exp2_raan_ma.pdf>
-Package pdftex.def Info: figures/exp2_raan_ma.pdf  used on input line 146.
+Package pdftex.def Info: figures/exp2_raan_ma.pdf  used on input line 145.
 (pdftex.def)             Requested size: 225.48038pt x 195.08955pt.
-<figures/exp3_loss_landscape.pdf, id=457, 400.74428pt x 207.58841pt>
+<figures/exp3_loss_landscape.pdf, id=465, 615.02747pt x 298.38953pt>
 File: figures/exp3_loss_landscape.pdf Graphic file (type pdf)
 <use figures/exp3_loss_landscape.pdf>
-Package pdftex.def Info: figures/exp3_loss_landscape.pdf  used on input line 161.
-(pdftex.def)             Requested size: 469.75499pt x 243.34941pt.
-
-Underfull \vbox (badness 1558) has occurred while \output is active []
-
+Package pdftex.def Info: figures/exp3_loss_landscape.pdf  used on input line 162.
+(pdftex.def)             Requested size: 469.75499pt x 227.91666pt.
 
 
 [9 <./figures/exp1_gradient_validation.pdf>]
-<figures/exp3_convergence.pdf, id=514, 273.12059pt x 237.43832pt>
-File: figures/exp3_convergence.pdf Graphic file (type pdf)
-<use figures/exp3_convergence.pdf>
-Package pdftex.def Info: figures/exp3_convergence.pdf  used on input line 226.
-(pdftex.def)             Requested size: 225.48038pt x 196.02669pt.
-<figures/exp3_groundtrack_optimized.pdf, id=515, 396.07918pt x 208.80354pt>
-File: figures/exp3_groundtrack_optimized.pdf Graphic file (type pdf)
-<use figures/exp3_groundtrack_optimized.pdf>
-Package pdftex.def Info: figures/exp3_groundtrack_optimized.pdf  used on input line 235.
-(pdftex.def)             Requested size: 225.48038pt x 118.86632pt.
-<figures/exp3_groundtrack_walker.pdf, id=516, 396.04915pt x 209.33678pt>
-File: figures/exp3_groundtrack_walker.pdf Graphic file (type pdf)
-<use figures/exp3_groundtrack_walker.pdf>
-Package pdftex.def Info: figures/exp3_groundtrack_walker.pdf  used on input line 241.
-(pdftex.def)             Requested size: 225.48038pt x 119.17946pt.
-) (./sections/conclusion.tex
 Underfull \vbox (badness 10000) has occurred while \output is active []
 
 
 
-[10 <./figures/exp2_convergence.pdf> <./figures/exp2_raan_ma.pdf>])
-Underfull \vbox (badness 3482) has occurred while \output is active []
+[10 <./figures/exp2_convergence.pdf> <./figures/exp2_raan_ma.pdf> <./figures/exp3_loss_landscape.pdf>]
+<figures/exp3_convergence.pdf, id=621, 273.12068pt x 237.43832pt>
+File: figures/exp3_convergence.pdf Graphic file (type pdf)
+<use figures/exp3_convergence.pdf>
+Package pdftex.def Info: figures/exp3_convergence.pdf  used on input line 227.
+(pdftex.def)             Requested size: 225.48038pt x 196.02669pt.
+<figures/exp3_groundtrack_optimized.pdf, id=622, 650.07356pt x 312.92424pt>
+File: figures/exp3_groundtrack_optimized.pdf Graphic file (type pdf)
+<use figures/exp3_groundtrack_optimized.pdf>
+Package pdftex.def Info: figures/exp3_groundtrack_optimized.pdf  used on input line 234.
+(pdftex.def)             Requested size: 469.75499pt x 226.12654pt.
+<figures/exp3_groundtrack_walker.pdf, id=623, 650.03926pt x 313.45749pt>
+File: figures/exp3_groundtrack_walker.pdf Graphic file (type pdf)
+<use figures/exp3_groundtrack_walker.pdf>
+Package pdftex.def Info: figures/exp3_groundtrack_walker.pdf  used on input line 236.
+(pdftex.def)             Requested size: 469.75499pt x 226.52144pt.
+) (./sections/conclusion.tex
+
+[11]) (./template.bbl
+
+[12 <./figures/exp3_convergence.pdf>]
+Underfull \hbox (badness 2443) in paragraph at lines 56--61
+[]\T1/ptm/m/n/10 (+20) Juan Fraire, San-ti-ago Henn, Fabio Dovis, Roberto Garello, and Gior-gio Tar-icco.  \T1/ptm/m/it/10 (+20) Sparse Satel-
+ []
 
 
+Underfull \hbox (badness 2913) in paragraph at lines 56--61
+\T1/ptm/m/it/10 (+20) lite Con-stel-la-tion De-sign for LoRa-based Direct-to-Satellite In-ter-net of Things\T1/ptm/m/n/10 (+20) .  De-cem-ber 2020.
+ []
 
-[11 <./figures/exp3_loss_landscape.pdf>] (./template.bbl
 
-[12 <./figures/exp3_convergence.pdf>]) (./sections/appendix.tex
+Underfull \vbox (badness 1072) has occurred while \output is active []
+
+
 
 [13 <./figures/exp3_groundtrack_optimized.pdf> <./figures/exp3_groundtrack_walker.pdf>]
+Underfull \hbox (badness 1043) in paragraph at lines 96--100
+\T1/ptm/m/n/10 (+20) scape of Neu-ral Nets.  In \T1/ptm/m/it/10 (+20) Ad-vances in Neu-ral In-for-ma-tion Pro-cess-ing Sys-tems\T1/ptm/m/n/10 (+20) , vol-ume 31. Cur-ran
+ []
+
+) (./sections/appendix.tex
+
+[14]
 Underfull \hbox (badness 1845) in paragraph at lines 21--23
  []\T1/ptm/b/n/10 (+20) Grid search pa-ram-e-ters.[] \T1/ptm/m/n/10 (+20) The grid search eval-u-ates the re-laxed loss of all four fi-nal so-lu-tions un-der
  []
@@ -1028,27 +1037,27 @@ Underfull \hbox (badness 1708) in paragraph at lines 21--23
 
 )
 
-[14] (./template.aux)
+[15] (./template.aux)
  ***********
 LaTeX2e <2024-11-01> patch level 2
 L3 programming layer <2025-01-18>
  ***********
 Package rerunfilecheck Info: File `template.out' has not changed.
-(rerunfilecheck)             Checksum: 08736144D5C845A0B5A574A68B362C75;3974.
+(rerunfilecheck)             Checksum: 4F24A8860B277F1B10DF67DFBF933015;4153.
  ) 
 Here is how much of TeX's memory you used:
- 42273 strings out of 473190
- 994569 string characters out of 5715801
- 1472145 words of memory out of 5000000
- 64487 multiletter control sequences out of 15000+600000
- 617336 words of font info for 246 fonts, out of 8000000 for 9000
+ 42206 strings out of 473190
+ 992974 string characters out of 5715801
+ 1473315 words of memory out of 5000000
+ 64399 multiletter control sequences out of 15000+600000
+ 618588 words of font info for 258 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 99i,13n,105p,1100b,1180s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 99i,13n,105p,1100b,1178s stack positions out of 10000i,1000n,20000p,200000b,200000s
 </usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cmextra/cmex8.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi5.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi6.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi7.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmib10.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cmextra/cmmib7.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr5.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr6.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy5.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sftt1000.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/urw/times/utmb8a.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/urw/times/utmr8a.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/urw/times/utmri8a.pfb>
-Output written on template.pdf (14 pages, 2964271 bytes).
+Output written on template.pdf (15 pages, 2664341 bytes).
 PDF statistics:
- 889 PDF objects out of 1000 (max. 8388607)
- 601 compressed objects within 7 object streams
- 120 named destinations out of 1000 (max. 500000)
- 48891 words of extra memory for PDF output out of 51595 (max. 10000000)
+ 945 PDF objects out of 1000 (max. 8388607)
+ 652 compressed objects within 7 object streams
+ 123 named destinations out of 1000 (max. 500000)
+ 48899 words of extra memory for PDF output out of 51595 (max. 10000000)
 

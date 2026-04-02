@@ -483,13 +483,13 @@ INPUT ./figures/fig2d_logsumexp.pdf
 INPUT ./figures/fig2d_logsumexp.pdf
 INPUT ./figures/fig2d_logsumexp.pdf
 INPUT /usr/local/texlive/2025/texmf-dist/fonts/tfm/adobe/times/ptmri8t.tfm
+INPUT /usr/local/texlive/2025/texmf-dist/fonts/vf/adobe/times/ptmri8t.vf
+INPUT /usr/local/texlive/2025/texmf-dist/fonts/tfm/adobe/times/ptmri8r.tfm
 INPUT ./sections/experiments.tex
 INPUT ./sections/experiments.tex
 INPUT ./sections/experiments.tex
 INPUT ./sections/experiments.tex
 INPUT sections/experiments.tex
-INPUT /usr/local/texlive/2025/texmf-dist/fonts/vf/adobe/times/ptmri8t.vf
-INPUT /usr/local/texlive/2025/texmf-dist/fonts/tfm/adobe/times/ptmri8r.tfm
 INPUT ./figures/exp1_gradient_validation.pdf
 INPUT ./figures/exp1_gradient_validation.pdf
 INPUT ./figures/exp1_gradient_validation.pdf
@@ -511,6 +511,8 @@ INPUT ./figures/exp3_loss_landscape.pdf
 INPUT ./figures/exp3_loss_landscape.pdf
 INPUT ./figures/exp3_loss_landscape.pdf
 INPUT ./figures/exp3_loss_landscape.pdf
+INPUT /usr/local/texlive/2025/texmf-dist/fonts/vf/adobe/times/ptmr8t.vf
+INPUT /usr/local/texlive/2025/texmf-dist/fonts/tfm/adobe/times/ptmr8r.tfm
 INPUT ./figures/exp3_convergence.pdf
 INPUT ./figures/exp3_convergence.pdf
 INPUT ./figures/exp3_convergence.pdf
@@ -531,8 +533,6 @@ INPUT ./sections/conclusion.tex
 INPUT ./sections/conclusion.tex
 INPUT ./sections/conclusion.tex
 INPUT sections/conclusion.tex
-INPUT /usr/local/texlive/2025/texmf-dist/fonts/vf/adobe/times/ptmr8t.vf
-INPUT /usr/local/texlive/2025/texmf-dist/fonts/tfm/adobe/times/ptmr8r.tfm
 INPUT ./template.bbl
 INPUT ./template.bbl
 INPUT template.bbl

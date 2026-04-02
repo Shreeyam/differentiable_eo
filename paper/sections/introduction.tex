@@ -3,21 +3,21 @@
 
 % Satellite constellation design---selecting orbital parameters for a fleet of satellites to optimize Earth observation performance---is a central problem in mission planning~\citep{wertz2011space}.
 % For missions requiring responsive coverage of specific regions or targets, the design challenge is acute: the constellation must provide frequent revisit over non-uniform, mission-specific areas of interest while respecting orbital mechanics constraints.
-% Applications range from disaster monitoring~\citep{paek2019recon} and maritime domain awareness to agricultural surveillance and defense reconnaissance.
+% Applications range from disaster monitoring~\citep{paek_optimization_2019} and maritime domain awareness to agricultural surveillance and defense reconnaissance.
 Designing satellite constellations is a fundamental problem in space mission design, across applications such as Earth Observation (EO), telecommunications, and navigation. The design space is high dimensional, with each spacecraft bringing up to six degrees of freedom corresponding to their orbital elements, and a wide range of often competing objectives to optimize over.
 
 Traditional approaches address this complexity in one of two ways.
-Parametric families such as Walker Delta, Walker Star~\citep{walker1984satellite}, and Flower constellations~\citep{mortari2004flower} reduce the design space to a fixed set of parameters but are inherently symmetric, making them non-optimal for non-uniform objectives.
-Metaheuristic methods such as genetic algorithms can handle arbitrary objectives but require thousands to millions of simulator rollouts~\citep{paek2019recon}.
+Parametric families such as Walker Delta, Walker Star~\citep{walker_satellite_1984}, and Flower constellations~\citep{mortari_flower_2004} reduce the design space to a fixed set of parameters but are inherently symmetric, making them non-optimal for non-uniform objectives.
+Metaheuristic methods such as genetic algorithms can handle arbitrary objectives but require thousands to millions of simulator rollouts~\citep{paek_optimization_2019}.
 
 For EO missions, the design problem is especially complex. Coverage and daytime revisit requirements may be non-uniform across ground targets, with additional constraints on data downlink. This non-uniformity makes parametric familie non-optimal, while the combinatorial nature of the problem makes metaheuristic methods computationally expensive.
 
-Gradient-based optimization has also been previously attempted, but with limited success. \citet{paek2019recon} found the problem poorly conditioned for gradient-based methods, with difficulty even achieving convergence. Previous work has been     limited the non-differentiability of the computational graph. Recent work by \citet{acciarini2024dsgp4} has addressed part of this by developing $\partial$SGP4, an end-to-end differentiable SGP4 orbit propagator. However, the coverage and revisit metrics themselves remain non-differentiable, due to requiring binary visibility indicators, Boolean OR operations, and max functions.
+Gradient-based optimization has also been previously attempted, but with limited success. \citet{paek_optimization_2019} found the problem poorly conditioned for gradient-based methods, with difficulty even achieving convergence. Previous work has been     limited the non-differentiability of the computational graph. Recent work by \citet{acciarini_closing_2025} has addressed part of this by developing $\partial$SGP4, an end-to-end differentiable SGP4 orbit propagator. However, the coverage and revisit metrics themselves remain non-differentiable, due to requiring binary visibility indicators, Boolean OR operations, and max functions.
 
 To address this, we make the following contributions:
 \begin{enumerate}
     \item \textbf{Four continuous relaxations} that make coverage and revisit objectives differentiable: a soft sigmoid for visibility, a noisy-OR for multi-satellite aggregation, a leaky integrator for revisit gap tracking, and a LogSumExp soft-maximum for worst-case revisit (\figref{fig:relaxations}).
-    \item \textbf{An end-to-end differentiable pipeline} from orbital elements to mission-level coverage metrics, composed with $\partial$SGP4~\citep{acciarini2024dsgp4} and optimized with the AdamW optimizer (\figref{fig:pipeline}).
+    \item \textbf{An end-to-end differentiable pipeline} from orbital elements to mission-level coverage metrics, composed with $\partial$SGP4~\citep{acciarini_closing_2025} and optimized with the AdamW optimizer (\figref{fig:pipeline}).
     \item \textbf{Demonstration on weighted target optimization}, where parametric families are inapplicable and prior gradient-based attempts failed.
 \end{enumerate}
 

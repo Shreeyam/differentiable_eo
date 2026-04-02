@@ -2,45 +2,54 @@ This is BibTeX, Version 0.99d (TeX Live 2025)
 Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
 The top-level auxiliary file: template.aux
 The style file: plainnat.bst
-Database file #1: references.bib
-You've used 21 entries,
+Database file #1: relaxed_eo.bib
+Warning--I'm ignoring vallado_revisiting_nodate's extra "doi" field
+--line 319 of file relaxed_eo.bib
+Warning--to sort, need author or key in noauthor_mitsuba_nodate
+Warning--empty year in noauthor_mitsuba_nodate
+Warning--empty journal in baydin_automatic_2018
+Warning--empty publisher in fraire_sparse_2020
+Warning--empty year in vallado_revisiting_nodate
+Warning--empty year in vallado_revisiting_nodate
+You've used 22 entries,
             2773 wiz_defined-function locations,
-            714 strings with 8822 characters,
-and the built_in function-call counts, 10234 in all, are:
-= -- 838
-> -- 769
-< -- 8
-+ -- 258
-- -- 237
-* -- 883
-:= -- 1634
-add.period$ -- 65
-call.type$ -- 21
-change.case$ -- 138
-chr.to.int$ -- 21
-cite$ -- 42
-duplicate$ -- 441
-empty$ -- 758
-format.name$ -- 266
-if$ -- 2085
+            761 strings with 10842 characters,
+and the built_in function-call counts, 11810 in all, are:
+= -- 1049
+> -- 851
+< -- 10
++ -- 286
+- -- 264
+* -- 1062
+:= -- 1872
+add.period$ -- 113
+call.type$ -- 22
+change.case$ -- 151
+chr.to.int$ -- 22
+cite$ -- 51
+duplicate$ -- 463
+empty$ -- 822
+format.name$ -- 293
+if$ -- 2439
 int.to.chr$ -- 1
 int.to.str$ -- 1
-missing$ -- 24
-newline$ -- 114
+missing$ -- 22
+newline$ -- 161
 num.names$ -- 84
-pop$ -- 287
+pop$ -- 298
 preamble$ -- 1
-purify$ -- 120
+purify$ -- 132
 quote$ -- 0
-skip$ -- 339
+skip$ -- 359
 stack$ -- 0
-substring$ -- 204
-swap$ -- 28
-text.length$ -- 2
+substring$ -- 240
+swap$ -- 57
+text.length$ -- 4
 text.prefix$ -- 0
 top$ -- 0
-type$ -- 216
-warning$ -- 0
-while$ -- 76
+type$ -- 222
+warning$ -- 6
+while$ -- 81
 width$ -- 0
-write$ -- 273
+write$ -- 371
+(There were 7 warnings)
