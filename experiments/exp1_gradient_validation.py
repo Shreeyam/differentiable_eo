@@ -20,7 +20,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import scienceplots
-plt.style.use(['science'])
+plt.style.use(['science', 'shreeyam.mplstyle'])
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 

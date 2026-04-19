@@ -9,6 +9,8 @@ import numpy as np
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+plt.style.use('shreeyam.mplstyle')
+colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from differentiable_eo.constants import R_EARTH
@@ -58,7 +60,8 @@ for name, raans, mas in [('initial', BAD_RAANS, BAD_MAS),
 
     render_globe(ax_earth, ax3d, raans, mas, earth_layer,
                  ball_diam, ball_cx, ball_cy, frame_size,
-                 N_PLANES, N_SATS_PER_PLANE, ALT_KM, INC_DEG)
+                 N_PLANES, N_SATS_PER_PLANE, ALT_KM, INC_DEG,
+                 colors=[colors[i % len(colors)] for i in range(N_PLANES)])
 
     save_path = os.path.join(out, f'globe_{name}.pdf')
     fig.savefig(save_path, format='pdf', dpi=DPI, transparent=True)

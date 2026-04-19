@@ -1,14 +1,20 @@
-\newpage
 \section{Conclusions and Future Work}
 \label{sec:conclusion}
 
-We show that gradient-based optimization is viable for satellite constellation design when coverage and revisit metrics are made differentiable through continuous relaxations.
+We show that gradient-based optimization is viable for satellite constellation configuration when coverage and revisit metrics are made differentiable through continuous relaxations.
 The relaxed objectives track their hard counterparts (\secref{sec:tightness}), produce well-conditioned gradients where finite-difference approaches do not~\citep{paek_optimization_2019}, and recover Walker Delta geometry on uniform coverage while discovering Molniya-like orbits for regional targets without domain-specific inductive biases.
 
 \paragraph{Limitations.}
-The current approach optimizes a single-epoch snapshot and does not account for long-term perturbations (J2 RAAN drift, atmospheric drag) that alter constellation geometry over the mission lifetime.
-Additionally, discrete design variables such as the number of orbital planes and satellites per plane remain non-differentiable and must be set by the user or searched over separately.
+The scope of this work is the configuration problem: given a fixed satellite count $N$ and plane structure, the optimizer assigns orbital elements.
+Sizing (choosing $N$ and plane count) and launch-feasibility are discrete design choices handled outside the gradient loop.
+The formulation treats coverage as single-pass---a target is considered revisited as soon as any satellite is visible---and does not directly model multi-pass requirements (e.g.\ $K$ independent views per day for stereo, change detection, or integration-time budgets).
+The visibility predicate is geometry-only: \eqref{eq:coverage} gates on satellite elevation alone, whereas many imaging missions additionally require Sun-illumination of the target, which introduces a second discontinuous constraint parameterized by the solar ephemeris~\citep{vallado_fundamentals_2022}.
+Finally, the $\sim$\SI{24}{\hour} snapshot horizon does not capture long-term perturbations ($J_2$ RAAN drift, atmospheric drag) or seasonal effects such as Sun-synchronous repeat patterns that alter constellation geometry and illumination over mission lifetimes.
+Discrete design variables such as the number of orbital planes and satellites per plane remain non-differentiable and must be set by the user or searched over separately.
 
 \paragraph{Future work.}
-Incorporating J2 secular perturbations would enable optimization over longer time horizons, potentially discovering geometries that exploit RAAN drift for improved coverage evolution.
-The differentiable pipeline presented is not specific to the objectives considered in this work: heterogeneous sensor placement, constellation reconfiguration, and multi-objective ground coverage with varying elevation constraints are all expressible as weighted sums over the same computational graph.
+The relaxations composed in this paper are not tied to the specific discrete functions they replace.
+Sun-elevation gating admits the same soft-sigmoid treatment as satellite elevation and composes into the noisy-OR as an additional factor; multi-pass $K$-fold coverage can be expressed as a count over soft visibilities, with either a second LogSumExp or algebraically simpler power-law alternatives (mean-square gap, $p$-norm soft-max) when numerical conditioning of the exponent becomes an issue.
+Launch-feasibility and fuel-budget constraints fit naturally as differentiable penalty terms, computed as $\Delta v$ from a nominal dropoff orbit (e.g.\ \SI{500}{\kilo\metre} circular) to the optimized elements; this constrains the optimizer to geometries the spacecraft can actually reach.
+Extending to longer horizons is feasible either by parallel multi-epoch aggregation---running the pipeline over several days and summing the objectives---or by incorporating $J_2$ secular rates directly into the propagator, potentially letting the optimizer discover geometries that exploit RAAN drift for improved coverage evolution or Sun-synchronous repeat tracks.
+The differentiable pipeline is otherwise agnostic to the objective: heterogeneous sensor placement, constellation reconfiguration, and multi-objective ground coverage with varying elevation constraints by mission type are all expressible as weighted sums over the same computational graph.

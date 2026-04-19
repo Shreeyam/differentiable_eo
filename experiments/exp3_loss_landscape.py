@@ -27,7 +27,8 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import scienceplots
-plt.style.use('science')
+plt.style.use(['science', 'shreeyam.mplstyle'])
+colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
@@ -57,7 +58,7 @@ CONFIGS = [
     ("Clustered",    [0, 10, 20, 30, 40, 50]),
     ("Two-cluster",  [0, 5, 180, 185, 270, 275]),
 ]
-COLORS = ['#2196F3', '#4CAF50', '#FF5722', '#9C27B0']
+COLORS = colors[:4]
 
 
 def ma_and_raan_specs():

@@ -1,0 +1,4 @@
+# Shreeyam's color palette
+# Usage: plt.style.use('shreeyam.mplstyle') or plt.style.use(['science', 'grid', 'shreeyam.mplstyle'])
+
+axes.prop_cycle: cycler('color', ['4a5de9', 'ea1a69', '00c5b3', 'f46009', '07acf8', 'fcbf07'])

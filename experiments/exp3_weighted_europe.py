@@ -20,7 +20,8 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import scienceplots
-plt.style.use(['science', 'no-latex'])
+plt.style.use(['science', 'no-latex', 'shreeyam.mplstyle'])
+colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
@@ -294,8 +295,8 @@ def main():
 
     # ---- Paper figure: target map + convergence ----
     print("\nGenerating paper figures...")
-    COV_COLOR = '#3F51B5'
-    REV_COLOR = '#E91E63'
+    COV_COLOR = colors[0]
+    REV_COLOR = colors[1]
     paper_dir = os.path.join(os.path.dirname(__file__), '..', 'paper', 'figures')
 
     # (a) Europe target map

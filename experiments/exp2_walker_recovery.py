@@ -20,7 +20,8 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import scienceplots
-plt.style.use(['science', 'no-latex'])
+plt.style.use(['science', 'no-latex', 'shreeyam.mplstyle'])
+colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
 from matplotlib.animation import FuncAnimation, PillowWriter
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
@@ -269,7 +270,7 @@ def main():
 
     # Row 3: Ground tracks (initial, optimized, Walker)
     dense_tsinces = torch.linspace(0, prop_min, 500)
-    colors_planes = plt.cm.tab10(np.linspace(0, 1, N_PLANES))
+    colors_planes = [colors[i % len(colors)] for i in range(N_PLANES)]
 
     for ax_idx, (label, tle_set) in enumerate([
         ("Initial", result.initial_tles),
@@ -312,8 +313,8 @@ def main():
 
     # ---- Paper figures: two separate PDFs for (a)/(b) in LaTeX ----
     print("\nGenerating paper figures...")
-    COV_COLOR = '#3F51B5'   # indigo (from relaxation plots)
-    REV_COLOR = '#E91E63'   # pink/magenta
+    COV_COLOR = colors[0]
+    REV_COLOR = colors[1]
     paper_dir = os.path.join(os.path.dirname(__file__), '..', 'paper', 'figures')
 
     # (a) Convergence
@@ -480,8 +481,10 @@ def main():
             walker_positions.append((raan_w, ma_w))
 
     # Layout: 3D left, RAAN right, loss spanning bottom
-    fig_anim = plt.figure(figsize=(14, 8))
-    gs = fig_anim.add_gridspec(2, 2, height_ratios=[3, 1], hspace=0.3, wspace=0.25)
+    fig_anim = plt.figure(figsize=(10, 6))
+    gs = fig_anim.add_gridspec(2, 2, height_ratios=[3, 1],
+                               hspace=0.35, wspace=0.05,
+                               left=0.02, right=0.98, top=0.95, bottom=0.10)
     ax3d = fig_anim.add_subplot(gs[0, 0], projection='3d')
     ax_rm = fig_anim.add_subplot(gs[0, 1])
     ax_loss = fig_anim.add_subplot(gs[1, :])
@@ -539,7 +542,7 @@ def main():
                     ax3d.quiver(*cur, *d, color=colors_planes[p], alpha=0.7,
                                 arrow_length_ratio=0.2, linewidth=1.5)
 
-        lim = r_orbit * 0.7
+        lim = r_orbit * 0.65
         ax3d.set_xlim(-lim, lim)
         ax3d.set_ylim(-lim, lim)
         ax3d.set_zlim(-lim, lim)
@@ -577,8 +580,8 @@ def main():
 
         ax_rm.set_xlim(-5, 365)
         ax_rm.set_ylim(-5, 365)
-        ax_rm.set_xlabel('RAAN (deg)')
-        ax_rm.set_ylabel('Mean Anomaly (deg)')
+        ax_rm.set_xlabel('RAAN [deg]')
+        ax_rm.set_ylabel('Mean Anomaly [deg]')
         ax_rm.set_title('RAAN vs Mean Anomaly')
         ax_rm.grid(True, alpha=0.2)
 

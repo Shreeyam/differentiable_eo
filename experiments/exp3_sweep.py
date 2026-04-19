@@ -10,7 +10,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import scienceplots
-plt.style.use(['science', 'no-latex'])
+plt.style.use(['science', 'no-latex', 'shreeyam.mplstyle'])
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 

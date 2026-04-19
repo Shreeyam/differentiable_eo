@@ -39,7 +39,7 @@
 \newcommand\tabref{Table~\ref}
 \newcommand*{\secref}[1]{\hyperref[{#1}]{\S\ref*{#1}}}
 
-\title{Differentiable Satellite Constellation Design via Relaxed Coverage and Revisit Objectives}
+\title{Differentiable Satellite Constellation Configuration via Relaxed Coverage and Revisit Objectives}
 
 \author{
     \href{https://orcid.org/0000-0002-7227-4946}{\includegraphics[scale=0.06]{orcid.pdf}\hspace{1mm}Shreeyam Kacker} \\
@@ -47,7 +47,7 @@
 	MIT\\
 	\texttt{shreeyam@mit.edu}
     \And
-    Kerri Cahoy \\
+    \href{https://orcid.org/0000-0002-7791-5124}{\includegraphics[scale=0.06]{orcid.pdf}\hspace{1mm}Kerri Cahoy} \\
     Department of Aeronautics and Astronautics\\
     MIT\\
     \texttt{kcahoy@mit.edu}
@@ -68,7 +68,7 @@ pdfkeywords={satellite constellation, differentiable programming, orbit propagat
 \maketitle
 
 \begin{abstract}
-Satellite constellation design requires optimizing orbital parameters across multiple satellites to maximize mission specific metrics. For many types of mission, it is desirable to maximize coverage and minimize revisit gaps over ground targets. Existing approaches to constellation design either restrict the design space to symmetric parametric families such as Walker constellations, or rely on metaheuristic methods that require significant compute and many iterations. Gradient-based optimization has been considered intractable due to the non-differentiability of coverage and revisit metrics, which involve binary visibility indicators and discrete max operations. We introduce four continuous relaxations: soft sigmoid visibility, noisy-OR multi-satellite aggregation, leaky integrator revisit gap tracking, and LogSumExp soft-maximum, which when composed with the $\partial$SGP4 differentiable orbit propagator, yield a fully differentiable pipeline from orbital elements to mission-level objectives. We show that this scheme can recover Walker-Delta geometry from irregular initializations, and discovers elliptical Molniya-like orbits with apogee dwell over northern latitudes, from only gradients.
+Satellite constellation design requires optimizing orbital parameters across multiple satellites to maximize mission specific metrics. For many types of mission, it is desirable to maximize coverage and minimize revisit gaps over ground targets. Existing approaches to constellation design either restrict the design space to symmetric parametric families such as Walker constellations, or rely on metaheuristic methods that require significant compute and many iterations. Gradient-based optimization has been considered intractable due to the non-differentiability of coverage and revisit metrics, which involve binary visibility indicators and discrete max operations. We introduce four continuous relaxations: soft sigmoid visibility, noisy-OR multi-satellite aggregation, leaky integrator revisit gap tracking, and LogSumExp soft-maximum, which when composed with the $\partial$SGP4 differentiable orbit propagator, yield a fully differentiable pipeline from orbital elements to mission-level objectives. We show that this scheme can recover Walker-Delta geometry from irregular initializations, and discovers elliptical Molniya-like orbits with apogee dwell over extreme latitudes from only gradients. Compared to simulated annealing (SA) and genetic algorithm (GA) baselines, our gradient-based method can recover known-optimal geometry 
 \end{abstract}
 
 \noindent\textbf{Keywords:} satellite constellation design, differentiable programming, orbit propagation
@@ -82,7 +82,7 @@ Satellite constellation design requires optimizing orbital parameters across mul
 \input{sections/conclusion}
 
 \FloatBarrier
-\bibliographystyle{plainnat}
+\bibliographystyle{unsrtnat}
 \bibliography{relaxed_eo}
 
 \input{sections/appendix}

@@ -1,0 +1,16 @@
+% Manually generated from experiments/exp2_baselines.py (5 seeds, 4050 evals each: 4000 main + 50-eval SA probe, matched across methods)
+% Range is min--max across seeds; the best side of each range is bolded
+% (highest coverage, lowest revisit).
+\begin{tabular}{lrr}
+\toprule
+\textbf{Method} & \textbf{Hard Coverage [\%]} & \textbf{Hard Revisit [min]} \\
+\midrule
+Walker 24/6/1 reference & 40.33 & 48.0 \\
+Gradient (ours, 1000 iters) & \textbf{40.34} & \textbf{48.0} \\
+\midrule
+\multicolumn{3}{l}{\emph{Black-box baselines (4000 iters, range over 5 seeds):}} \\
+\quad Simulated annealing       & 34.33--\textbf{36.54} & \textbf{73.9}--80.5 \\
+\quad Genetic algorithm          & 37.83--\textbf{38.69} & \textbf{60.3}--62.2 \\
+\quad TwoPointsDE~\citep{rapin_nevergrad_2018} & 35.77--\textbf{37.44} & \textbf{68.5}--76.1 \\
+\bottomrule
+\end{tabular}

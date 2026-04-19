@@ -60,7 +60,7 @@ The elevation angle from ground point $\vect{g}_j$ to satellite $i$ at time $t_k
     \label{eq:elevation}
 \end{equation}
 where $\hat{\vect{g}}_j = \vect{g}_j / \|\vect{g}_j\|$ is the local vertical unit vector at the ground point.
-A satellite is visible when $\alpha_{ij} \geq \alpha_{\min}$, where we consider the minimum elevation angle $\alpha_{\min} = \SI{10}{\degree}$, which varies depending on mission requirements.
+A satellite is visible when $\alpha_{ij} \geq \alpha_{\min}$, where we consider the minimum elevation angle $\alpha_{\min} = \SI{10}{\degree}$; the specific threshold depends on the mission type (payload beamwidth, link budget, atmospheric-loss tolerance) and is a user-supplied constant.
 
 \paragraph{Coverage and revisit.}
 
@@ -149,7 +149,7 @@ The mean worst-case revisit across all ground points is then
 
 In practice, the coverage and revisit objectives have different sensitivity to the sigmoid temperature $\tau$ in \eqref{eq:soft_visibility}: phantom coverage is an additive bias for coverage but multiplicatively resets the revisit integrator. We therefore split $\tau$ into $\tau_{\text{cov}}$ for the coverage objective and $\tau_{\text{rev}}$ for the revisit computation, calibrated in \secref{sec:tightness}.
 
-\begin{figure}[!htb]
+\begin{figure}[htb]
     \centering
     % STEP 1: The Images
     % This resizebox forces the whole row of images to be exactly textwidth wide.
@@ -212,6 +212,8 @@ The LogSumExp adds a further upward bias of at most $\beta \log K$.
 
 These effects compete: phantom coverage shortens gaps near the visibility boundary, while incomplete resets and the LogSumExp lengthen them.
 The net bias depends on the specific geometry and is neither a guaranteed upper nor lower bound on the true objective.
+
+To ameliorate the eff
 
 \paragraph{Split sigmoid temperatures.}
 \label{sec:relaxation_quality}

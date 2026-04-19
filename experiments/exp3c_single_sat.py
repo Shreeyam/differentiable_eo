@@ -18,7 +18,8 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import scienceplots
-plt.style.use(['science', 'no-latex'])
+plt.style.use(['science', 'no-latex', 'shreeyam.mplstyle'])
+colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
@@ -247,10 +248,10 @@ def main():
 
     pts = np.array([eci_xyz(inc_r, raan_r, th, a, ecc=ecc, argp_rad=argp_r)
                     for th in ring_th])
-    ax.plot(pts[:, 0], pts[:, 1], pts[:, 2], '-', color='#E91E63', alpha=0.6, lw=1.2)
+    ax.plot(pts[:, 0], pts[:, 1], pts[:, 2], '-', color=colors[1], alpha=0.6, lw=1.2)
 
     sat_pos = np.array(eci_xyz(inc_r, raan_r, ma_r, a, ecc=ecc, argp_rad=argp_r))
-    ax.scatter(*sat_pos, s=80, color='#E91E63', edgecolors='k', linewidths=0.5,
+    ax.scatter(*sat_pos, s=80, color=colors[1], edgecolors='k', linewidths=0.5,
               depthshade=False, zorder=5)
 
     ax.set_xlim(-lim, lim)
@@ -265,7 +266,7 @@ def main():
 
     # Convergence
     fig_conv, ax_conv = plt.subplots(figsize=(4, 3.5))
-    ax_conv.plot(hard_eval_iters, hard_rev_history, 's-', color='#E91E63',
+    ax_conv.plot(hard_eval_iters, hard_rev_history, 's-', color=colors[1],
                  lw=1.5, markersize=2)
     ax_conv.set_xlabel('Iteration')
     ax_conv.set_ylabel('Mean max revisit [min]')

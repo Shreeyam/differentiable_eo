@@ -32,3 +32,54 @@ Among valid combinations, we utilize the one that maximizes $\tau_{\text{cov}}$ 
 
 \paragraph{Reproducibility.}
 All experiments can be reproduced from the repository found at \url{https://github.com/shreeyam/differentiable_eo}.
+
+\section{Equivalences among candidate relaxations}
+\label{app:alternatives}
+
+Several natural alternatives to R1, R2, and R4 reduce \emph{exactly} to the chosen relaxations up to reparameterisation or additive constants.
+We record these identities because they explain why swapping in the alternative would not produce different optimiser dynamics.
+
+\subsection{R1: tanh is a rescaled sigmoid}
+
+For any $x \in \mathbb{R}$,
+\begin{equation}
+    \tfrac{1}{2}\bigl(1 + \tanh(x/2)\bigr)
+    = \tfrac{1}{2}\left(1 + \frac{e^{x/2} - e^{-x/2}}{e^{x/2} + e^{-x/2}}\right)
+    = \frac{e^{x/2}}{e^{x/2} + e^{-x/2}}
+    = \frac{1}{1 + e^{-x}}
+    = \sigma(x),
+    \label{eq:tanh_sigmoid}
+\end{equation}
+so the rescaled tanh $\bigl(1 + \tanh((\alpha_{ij} - \alpha_{\min})/(2\tau))\bigr)/2$ is pointwise identical to the sigmoid in \eqref{eq:soft_visibility}.
+Gradients, level sets, and every downstream quantity are unchanged.
+
+\subsection{R2: Noisy-OR is the probabilistic t-conorm}
+
+In fuzzy logic the \emph{probabilistic t-conorm}~\citep{klement_triangular_2000} of $n$ values $\{x_i\} \subset [0,1]$ is defined as $1 - \prod_i (1 - x_i)$, which is exactly the noisy-OR of \eqref{eq:noisy_or}.
+Equivalently, if $\tilde{c}_{ij}(t_k)$ is interpreted as the independent detection probability of satellite $i$ at target $j$, then
+\begin{equation}
+    \Pr\!\left[\bigcup_i \text{sat } i \text{ covers } j\right]
+    = 1 - \prod_i \Pr\!\left[\text{sat } i \text{ misses } j\right]
+    = 1 - \prod_i (1 - \tilde{c}_{ij}(t_k)).
+    \label{eq:noisy_or_derivation}
+\end{equation}
+No separate relaxation is needed: the noisy-OR operator is the unique member of the probabilistic t-conorm family that is smooth, bounded in $[0,1]$, and strictly increasing in each argument.
+
+\subsection{R4: Mellowmax differs from LogSumExp by an additive constant}
+
+The mellowmax operator was introduced by \citet{asadi_alternative_2017} as an alternative to the Boltzmann softmax used for value aggregation in $Q$-learning, where it restores a non-expansion property Boltzmann softmax lacks.
+Despite the motivation, mellowmax is itself an instance of LogSumExp up to an additive constant:
+\begin{equation}
+    \operatorname{mm}_{\omega}(X)
+    \;=\; \frac{1}{\omega}\log\!\left(\frac{1}{K}\sum_{k=1}^{K} e^{\omega x_k}\right).
+    \label{eq:mellowmax}
+\end{equation}
+Setting $\omega = 1/\beta$ and expanding the $1/K$ factor gives
+\begin{equation}
+    \operatorname{mm}_{1/\beta}(X)
+    = \beta \log\!\left(\sum_k e^{x_k/\beta}\right) - \beta \log K
+    = \logsumexp_\beta(X) - \beta \log K,
+    \label{eq:mellowmax_to_lse}
+\end{equation}
+so the two differ by the constant $\beta \log K$.
+Since gradients are invariant under additive constants, the optimiser sees identical dynamics; using mellowmax here would be a relabelling of LogSumExp rather than a different relaxation.

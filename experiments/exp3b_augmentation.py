@@ -22,7 +22,8 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import scienceplots
-plt.style.use(['science', 'no-latex'])
+plt.style.use(['science', 'no-latex', 'shreeyam.mplstyle'])
+colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
@@ -239,8 +240,8 @@ def main():
 
     # ---- Figures ----
     print("\nGenerating figures...")
-    COV_COLOR = '#3F51B5'
-    REV_COLOR = '#E91E63'
+    COV_COLOR = colors[0]
+    REV_COLOR = colors[1]
     paper_dir = os.path.join(os.path.dirname(__file__), '..', 'paper', 'figures')
 
     # Convergence
@@ -332,7 +333,7 @@ def main():
                       linewidths=0.4, depthshade=False, zorder=4)
 
     # New satellites (colored)
-    new_colors = ['#E91E63', '#3F51B5']  # pink, indigo
+    new_colors = [colors[1], colors[0]]
     for i in range(N_NEW):
         e = new_reparam[i].to_elements()
         inc_r = e[IDX_INCLO].item()
