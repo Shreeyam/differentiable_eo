@@ -1,5 +1,27 @@
 \appendix
 
+\section{Per-Experiment Parameters}
+\label{app:exp_params}
+
+\tabref{tab:exp_params} collects the per-experiment values for reproducibility. Values shared across experiments---propagation horizon \SI{24}{\hour}, $K=240$ time steps, minimum elevation $\alpha_{\min} = \SI{10}{\degree}$, AdamW with learning rate $\eta=10^{-2}$---are omitted. The ground grid is $36 \times 72$ except where a regional target set is specified.
+
+\begin{table}[!htb]
+\centering
+\caption{Per-experiment parameters for the experiments in \secref{sec:experiments}.}
+\label{tab:exp_params}
+\begin{tabular}{lccccccc}
+\toprule
+\textbf{Experiment} & $N$ & \textbf{DoF} & $J$ & $\tau_{\text{cov}}$ [\si{\degree}] & $\tau_{\text{rev}}$ [\si{\degree}] & $\beta$ [\si{\minute}] & $\lambda$ \\
+\midrule
+Exp 1 (toy)           &  2 &  2 & 2592 & 2.0 & 2.0 & 10 & 2.0 \\
+Exp 2 (Walker)        & 24 & 30 & 2592 & 2.0 & 2.0 & 10 & 0.1 \\
+Exp 3 (Europe)        &  4 & 12 &  500 & 2.0 & 2.0 & 10 & 1.0 \\
+Baselines (SA/GA/DE)  & 24 & 30 & 2592 & --- & --- & ---& 0.1 \\
+Hyperparam tuning     & 24 & 30 & 2592 & 2.0 & 2.0 & 10 & 0.1 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 \section{Hyperparameter Tuning}
 \label{app:hyperparam_grid}
 
@@ -37,7 +59,7 @@ All experiments can be reproduced from the repository found at \url{https://gith
 \label{app:alternatives}
 
 Several natural alternatives to R1, R2, and R4 reduce \emph{exactly} to the chosen relaxations up to reparameterisation or additive constants.
-We record these identities because they explain why swapping in the alternative would not produce different optimiser dynamics.
+We record these identities because they explain why swapping in the alternative would not produce different optimizer dynamics.
 
 \subsection{R1: tanh is a rescaled sigmoid}
 
@@ -82,4 +104,4 @@ Setting $\omega = 1/\beta$ and expanding the $1/K$ factor gives
     \label{eq:mellowmax_to_lse}
 \end{equation}
 so the two differ by the constant $\beta \log K$.
-Since gradients are invariant under additive constants, the optimiser sees identical dynamics; using mellowmax here would be a relabelling of LogSumExp rather than a different relaxation.
+Since gradients are invariant under additive constants, the optimizer sees identical dynamics; using mellowmax here would be a relabeling of LogSumExp rather than a different relaxation.

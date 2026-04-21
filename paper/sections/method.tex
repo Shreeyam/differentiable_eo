@@ -1,41 +1,14 @@
 \section{Method}
 \label{sec:method}
 
-
-
-
-\begin{figure*}[t]
-    \centering
-    \includegraphics[width=\linewidth]{figures/graph.pdf}
-        \caption{%
-        Computational graph for differentiable constellation optimization.
-        Orbital parameters $\boldsymbol{\theta}_i$ are propagated to ECI
-        position vectors $\{\vect{r}_i(t_k)\}$ across $K$ timesteps.
-        Four continuous relaxations (orange, \textbf{R1}--\textbf{R4})
-        transform the discrete coverage and revisit objectives into
-        smooth surrogates:
-        \textbf{R1}~soft sigmoid visibility over targets and satellites,
-        \textbf{R2}~noisy-OR aggregation to all-satellite coverage,
-        \textbf{R3}~leaky integrator revisit gap accumulation, and
-        \textbf{R4}~LogSumExp soft-maximum over time.
-        The coverage branch produces total soft coverage $\tilde{C}$;
-        the revisit branch produces the soft mean worst-case revisit
-        $\tilde{\Delta}^{\max}$.
-        Both feed into the loss $\mathcal{L}$, and gradients
-        $\nabla_{\boldsymbol{\theta}}\mathcal{L}$ flow back via
-        reverse-mode automatic differentiation (dashed).%
-    }
-    \label{fig:graph}
-\end{figure*}
-
 \subsection{Problem Formulation}
 \label{sec:setup}
 
 We consider a constellation of $N$ satellites, each parameterized by a two-line element (TLE) set. 
 Each satellite brings up to six degrees of freedom corresponding to their orbital elements, $[a,~e,~i,~\Omega,~\omega,~\mathcal{M}]^\top$, corresponding to semi-major axis, eccentricity, inclination, right ascension of the ascending node (RAAN), argument of periapsis, and mean anomaly, respectively.
-We universally fix the remaining TLE parameters corresponding to mean motion $n$, drag term $B^*$, and secular rates $\dot{n}$, $\ddot{n}$ to keep the constellation configuration static over time.
+We fix the remaining TLE parameters corresponding to mean motion $n$, drag term $B^*$, and secular rates $\dot{n}$, $\ddot{n}$ to keep the constellation configuration static over the optimization horizon (\SI{24}{\hour} in this work).
 
-Given a grid of $J$ ground target points $\mathcal{G} = \{\vect{g}_1, \ldots, \vect{g}_J\}$ on the Earth's surface and a time horizon $[0, T]$ discretized into $K$ steps with spacing $\Delta t = T/(K-1)$, we seek to maximize coverage over the Earth and minimize the worst-case revisit gap.
+Given a grid of $J$ ground target points $\mathcal{G} = \{\vect{g}_1, \ldots, \vect{g}_J\}$ on the Earth's surface and a time horizon $[0, T]$ discretized into $K$ steps with spacing $\delta t = T/(K-1)$, we seek to maximize coverage over the Earth and minimize the mean worst-case revisit gap.
 
 \paragraph{Propagation.}
 Each satellite's TLE elements are propagated through $\partial$SGP4~\citep{acciarini_closing_2025} to produce position vectors $\vect{r}_i(t_k)$ in the True Equator Mean Equinox (TEME) reference frame.
@@ -46,12 +19,12 @@ These are rotated to the Earth-Centered Earth-Fixed (ECEF) frame via the Greenwi
 \end{equation}
 where $\mat{R}_z(\theta)$ is the standard rotation matrix about the $z$-axis.
 This single-axis rotation is an approximation and neglects polar motion; the complete TEME-to-ECEF transformation requires an additional rotation between the Earth's instantaneous rotation axis and the ECEF pole~\citep{vallado_revisiting_nodate}.
-For the $\sim$\SI{24}{\hour} propagation horizons considered in this work, 
-polar-motion offsets are on the order of tenths of arcseconds, 
-corresponding to sub-kilometre position errors. These errors are small 
-relative to the $\sim$\SI{2200}{\kilo\metre} ground footprint 
-of a satellite at \SI{550}{\kilo\metre} altitude with 
-\SI{10}{\degree} minimum elevation.
+For the \SI{24}{\hour} propagation horizons considered in this work,
+polar-motion offsets are on the order of tenths of arcseconds,
+corresponding to sub-kilometer position errors. These errors are small
+relative to the $\sim$\SI{2200}{\kilo\metre} ground footprint
+of a satellite at \SI{550}{\kilo\metre} altitude with
+\SI{10}{\degree} minimum elevation. Longer horizons require the full IAU~2006/2000A chain; we return to this in \secref{sec:conclusion}.
 
 \paragraph{Elevation angle.}
 The elevation angle from ground point $\vect{g}_j$ to satellite $i$ at time $t_k$ is
@@ -97,7 +70,7 @@ We replace the hard step function with a sigmoid (\figref{fig:relaxations}a):
 \end{equation}
 where $\tau > 0$ controls the sharpness.
 As $\tau \to 0$ this recovers the hard indicator.
-This relaxation is analogous to the temperature-scaled softmax used in Gumbel-Softmax relaxations of discrete variables~\citep{jang_categorical_2017}.
+This relaxation is analogous to the temperature-scaled softmax in Gumbel-Softmax~\citep{jang_categorical_2017}, with unbounded support and non-zero gradient throughout. This pairs with the noisy-OR of \secref{sec:noisy_or}: the product $\prod_i(1 - \tilde{c}_{ij})$ never zero-clips, and gradients flow through every factor. In contrast, a clamped ramp function saturates to $0$ below a cutoff and loses the gradient for distant satellites. $\tanh$ and $\operatorname{erf}$ also share these properties, but are equivalent to sigmoid up to reparameterization (Appendix~\ref{app:alternatives}).
 
 
 \subsection{Relaxation 2: Noisy-OR Coverage Aggregation}
@@ -109,8 +82,9 @@ Starting with the Boolean OR operator in \eqref{eq:coverage}, treating each $\ti
     \tilde{C}_j(t_k) = 1 - \prod_{i=1}^{N} \left(1 - \tilde{c}_{ij}(t_k)\right).
     \label{eq:noisy_or}
 \end{equation}
-This function is smooth, monotonically increasing in each $\tilde{c}_{ij}$, and recovers the hard OR when all inputs are in $\{0, 1\}$.
-This relaxation also inherently handles overlapping coverage: additional coverage of a point produces diminishing marginal gain, preventing the optimizer from clustering satellites.
+This function monotonically increases in each $\tilde{c}_{ij}$, and recovers the hard OR when all inputs are in $\{0, 1\}$.
+This relaxation also intrinsically handles overlapping coverage: additional coverage of a point produces diminishing marginal gain, preventing the optimizer from clustering satellites.
+Noisy-OR is the unique member of the probabilistic t-conorm family~\citep{klement_triangular_2000} that is smooth, bounded in $[0,1]$, and strictly increasing in each argument; the other smooth alternative, the bounded-sum t-conorm $\min(1, \sum_i \tilde{c}_{ij})$, clips at $1$ and has zero-gradient regions once multiple satellites cover a single point (Appendix~\ref{app:alternatives}).
 
 The soft coverage fraction over the full set of ground points $\mathcal{G}$ with soft visibility and noisy-OR aggregation then becomes
 \begin{equation}
@@ -127,8 +101,9 @@ The revisit gap at a ground point is the time elapsed since the most recent cove
     \label{eq:leaky_integrator}
 \end{equation}
 When the ground point $\mathbf{g}_j$ is covered ($\tilde{C}_j \approx 1$), the accumulated gap is multiplied by approximately zero, resetting it.
-When the point is not covered ($\tilde{C}_j \approx 0$), the gap grows by $\Delta t$.
+When the point is not covered ($\tilde{C}_j \approx 0$), the gap grows by $\delta t$.
 This recurrence is fully differentiable and its maximum over time approximates the true worst-case revisit gap at each ground point.
+We use this form because the multiplicative reset is exact on binary inputs and keeps the gap in minutes. Alternatives (exponential decay, piecewise-soft reset gates, mean-square-gap aggregates) lose one or the other (Appendix~\ref{app:alternatives}).
 
 \subsection{Relaxation 4: LogSumExp Soft-Maximum}
 \label{sec:logsumexp}
@@ -141,13 +116,14 @@ We replace it with the LogSumExp smooth maximum~\citep{boyd_convex_2023} (\figre
 \end{equation}
 where $\beta$ is a sharpness parameter, for which we assign $\beta = \SI{10}{\minute}$.
 This relaxation satisfies the inequality $\max_k \tilde{\Delta}_j(t_k) \leq \widetilde{\Delta}_j^{\max} \leq \max_k \tilde{\Delta}_j(t_k) + \beta \log K$, providing an upper bound.
+We use LogSumExp because it is smooth, bounded within $\beta \log K$ of the true maximum, and has a single sharpness parameter $\beta$ in the same units as the gap. Mellowmax differs from LogSumExp by an additive constant and hence admits identical optimizer dynamics. Other soft-max operators ($p$-norm~\citep{boyd_convex_2023}, Boltzmann softmax~\citep{asadi_alternative_2017}) are equally permissible here but are not utilized in this work (Appendix~\ref{app:alternatives}).
 The mean worst-case revisit across all ground points is then
 \begin{equation}
     \tilde{\Delta}^{\max} = \frac{1}{J} \sum_{j=1}^{J} \widetilde{\Delta}_j^{\max}.
     \label{eq:mean_revisit}
 \end{equation}
 
-In practice, the coverage and revisit objectives have different sensitivity to the sigmoid temperature $\tau$ in \eqref{eq:soft_visibility}: phantom coverage is an additive bias for coverage but multiplicatively resets the revisit integrator. We therefore split $\tau$ into $\tau_{\text{cov}}$ for the coverage objective and $\tau_{\text{rev}}$ for the revisit computation, calibrated in \secref{sec:tightness}.
+Coverage and revisit objectives have different sensitivity to the sigmoid temperature $\tau$ in \eqref{eq:soft_visibility}: there exists an additive bias for coverage but a multiplicative bias for the leaky integrator. Hence, it is desirable to separate these parameters. We split $\tau$ into $\tau_{\text{cov}}$ for the coverage objective and $\tau_{\text{rev}}$ for the revisit computation, calibrated in \secref{sec:tightness}.
 
 \begin{figure}[htb]
     \centering
@@ -176,7 +152,7 @@ In practice, the coverage and revisit objectives have different sensitivity to t
         \begin{minipage}{0.24\textwidth}\centering (d) LogSumExp \end{minipage}%
     \end{center}
 
-    \caption{The four continuous relaxations used in this work to produce a differentiable loss landscape.}
+    \caption{The four continuous relaxations used in this work to produce a differentiable loss function.}
     \label{fig:relaxations}
 \end{figure}
 
@@ -196,7 +172,7 @@ For objectives that are not geodesically uniform, the sums over ground points ca
 \label{sec:tightness}
 
 Each of the four relaxations is individually tight: the soft sigmoid recovers the hard step as $\tau \to 0$; the noisy-OR is exact when its inputs are binary; the leaky integrator is exact when coverage is in $\{0, 1\}$; and the LogSumExp satisfies $\max_k x_k \leq \text{LSE} \leq \max_k x_k + \beta \log K$.
-However, the \emph{composition} of these relaxations does not inherit these guarantees, because each relaxation receives the soft output of the previous one rather than the binary values for which it was designed.
+However, the composition of these relaxations does not inherit these guarantees, because each relaxation receives the soft output of the previous one rather than the binary values for which it was designed.
 
 The interaction introduces two competing biases:
 
@@ -213,17 +189,30 @@ The LogSumExp adds a further upward bias of at most $\beta \log K$.
 These effects compete: phantom coverage shortens gaps near the visibility boundary, while incomplete resets and the LogSumExp lengthen them.
 The net bias depends on the specific geometry and is neither a guaranteed upper nor lower bound on the true objective.
 
-To ameliorate the eff
-
-\paragraph{Split sigmoid temperatures.}
-\label{sec:relaxation_quality}
-When a single temperature $\tau$ is shared, phantom coverage from clustered below-threshold satellites compounds through the noisy-OR and partially resets the leaky integrator, causing the relaxed loss to incorrectly favor clustered solutions.
-Decoupling into a coverage temperature $\tau_{\text{cov}}$ and a tighter revisit temperature $\tau_{\text{rev}}$ resolves this.
-A grid search confirms that $\tau_{\text{cov}} \gg \tau_{\text{rev}}$ correctly ranks solutions while maintaining smooth coverage gradients (Appendix~\ref{app:hyperparam_grid}).
-In practice, the hyperparameters used in experiments favor smooth gradients and reliable convergence over exact global ranking (\figref{fig:landscape}).
+The split sigmoid temperatures introduced in \secref{sec:logsumexp} provide a parameter for tuning this effect. Under a shared $\tau$, phantom coverage from clustered below-threshold satellites compounds through the noisy-OR and partially resets the leaky integrator, so the relaxed loss can rank clustered solutions above well-spread ones at the same hard metric. A grid search (Appendix~\ref{app:hyperparam_grid}) shows that $\tau_{\text{cov}} \gg \tau_{\text{rev}}$ restores the correct ordering of converged solutions while keeping smooth coverage gradients. However, competes with optimizability: ablation (b) in \secref{sec:ablations} finds that from a reasonable initialization, shared $\tau$ converges better than either split variant we tried. We therefore use shared $\tau$ in all experiments noting that certain problems may benefit from separated temperatures.
 
 \subsection{Optimization}
 \label{sec:optimization}
+
+
+\begin{figure*}[htb]
+    \centering
+    \includegraphics[width=\linewidth]{figures/graph.pdf}
+        \caption{%
+        Computational graph for differentiable constellation optimization. Orbital parameters $\boldsymbol{\theta}_i$ are propagated to ECI position vectors $\{\vect{r}_i(t_k)\}$ across $K$ timesteps. Four continuous relaxations (orange, \textbf{R1}--\textbf{R4}) transform the discrete coverage and revisit objectives into relaxed, differentiable objectives:
+        \textbf{R1}~soft sigmoid visibility over targets and satellites,
+        \textbf{R2}~noisy-OR aggregation to all-satellite coverage,
+        \textbf{R3}~leaky integrator revisit gap accumulation, and
+        \textbf{R4}~LogSumExp soft-maximum over time.
+        The coverage branch produces total soft coverage $\tilde{C}$;
+        the revisit branch produces the soft mean worst-case revisit
+        $\tilde{\Delta}^{\max}$.
+        Both feed into the loss $\mathcal{L}$, and gradients
+        $\nabla_{\boldsymbol{\theta}}\mathcal{L}$ flow back via
+        reverse-mode automatic differentiation (dashed, pink).%
+    }
+    \label{fig:graph}
+\end{figure*}
 
 \paragraph{Computational graph.}
 The full forward pass composes the $\partial$SGP4 propagator with the four relaxations into a single differentiable graph (\figref{fig:graph}).
@@ -232,14 +221,14 @@ The Jacobian $\partial \vect{r}_i^{\text{TEME}} / \partial \vect{x}_i$ is handle
 
 \paragraph{Interval constraints and reparameterization.} \label{para:interval_constraints}
 
-Without constraints, the optimizer trivially raises altitude until all ground points are permanently visible. We enforce interval constraints (e.g.\ LEO altitude bounds) via sigmoid reparameterization, mapping unconstrained variables $\vect{\theta}_i$ to valid elements $\vect{x}_i$:
+Without constraints, the optimizer trivially raises altitude until all ground points within range are visible. We enforce interval constraints (e.g.\ LEO altitude bounds) via sigmoid reparameterization, mapping unconstrained variables $\vect{\theta}_i$ to valid elements $\vect{x}_i$:
 \begin{equation}
     x_d = \ell_d + (u_d - \ell_d) \, \sigma(\theta_d) \quad \Rightarrow \quad \frac{\partial x_d}{\partial \theta_d} = (u_d - \ell_d) \, \sigma(\theta_d)(1 - \sigma(\theta_d)),
     \label{eq:reparam}
 \end{equation}
 for bounded parameters (e.g.\ inclination) with bounds $[\ell_d, u_d]$, and $x_d = \theta_d$ (identity) for periodic parameters (RAAN, mean anomaly) where wrapping is natural.
 This reparameterization eliminates the need for projected gradient or constrained optimization methods.
-For coupled constraints---such as requiring a minimum perigee altitude regardless of eccentricity---the per-element sigmoid is insufficient since perigee $r_p = a(1-e)$ couples semi-major axis and eccentricity. We reparameterize in (perigee altitude, excess altitude) space:
+For coupled constraints, such as requiring a minimum perigee altitude regardless of eccentricity, the per-element sigmoid is insufficient since perigee $r_p = a(1-e)$ couples semi-major axis and eccentricity. For this case, we reparameterize in (perigee altitude, excess altitude) space:
 \begin{align}
     r_p &= r_p^{\min} + (r_p^{\max} - r_p^{\min})\,\sigma(\theta_{r_p}), \label{eq:reparam_rp} \\
     \delta r &= \delta r^{\max}\,\sigma(\theta_{\delta r}), \label{eq:reparam_dr} \\
