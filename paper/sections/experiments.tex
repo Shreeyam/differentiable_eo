@@ -17,7 +17,7 @@ Specific relaxation parameters, optimizer settings, and revisit weight $\lambda$
 \label{sec:toy}
     
 To validate that the relaxed objectives produce correct gradients and results, we consider the simplest non-trivial constellation design problem: two satellites in a single orbital plane at \SI{550}{\kilo\metre} altitude with inclination fixed at \SI{60}{\degree} and RAAN fixed at \SI{0}{\degree}, optimizing only their mean anomalies $\mathcal{M}_1$ and $\mathcal{M}_2$.
-We use relaxation parameters $\tau = \SI{2}{\degree}$ (shared), $\beta = \SI{10}{\minute}$, $\lambda = 2.0$, and AdamW with learning rate $\eta = 10^{-2}$.
+We use relaxation parameters $\tau = \SI{2}{\degree}$ (shared), $\beta = \SI{10}{\minute}$, and $\lambda = 2.0$.
 
 The optimal solution is known analytically: the two satellites should be separated by \SI{180}{\degree} in mean anomaly to maximize coverage and revisit rate within the shared orbital plane.
 This reduces the problem to two free parameters, allowing the full loss landscape to be visualized.
@@ -183,19 +183,19 @@ We benchmark our differentiable pipeline against three such baselines on the Wal
 
 \paragraph{Baselines.}
 We compare against simulated annealing (SA), a genetic algorithm (GA), and differential evolution (DE), all applied to the hard fitness $\mathcal{L} = -C + \lambda \Delta^{\max}$ computed from \eqref{eq:coverage_fraction_hard} and \eqref{eq:mean_revisit_hard}; the baselines do not use the relaxed objective at all.
-SA and GA follow the constellation-design formulations used in prior heuristic work~\citep{paek_optimization_2019} with standard tuning: SA uses a probe-calibrated temperature schedule (\SI{80}{\percent} initial / \SI{1}{\percent} final acceptance, geometric cooling) and an adaptive step size targeting the Vanderbilt--Louie rate of $0.44$; GA uses tournament selection (size 3), uniform crossover, and Gaussian mutation with $\sigma$ annealed from $\SI{30}{\degree}$ to $\SI{5}{\degree}$.
-DE uses the TwoPointsDE implementation from nevergrad~\citep{rapin_nevergrad_2018}.
-All three warm-start from the same initialization as the gradient run and each is run for 5 seeds with a budget of 4050 evaluations (4000 main + the 50-evaluation SA probe, matched across methods).
+SA and GA follow the constellation-design formulations used in prior heuristic work~\citep{paek_optimization_2019} with standard tuning: SA uses a probe-calibrated temperature schedule (\SI{80}{\percent} initial / \SI{1}{\percent} final acceptance, geometric cooling~\citep{kirkpatrick_optimization_1983}) and an adaptive step size targeting the Vanderbilt--Louie rate of $0.44$~\citep{vanderbilt_monte_1984}; GA uses tournament selection~\citep{miller_genetic_nodate} (size 3), uniform crossover~\citep{syswerda_uniform_1989}, and Gaussian mutation with $\sigma$ annealed from $\SI{30}{\degree}$ to $\SI{5}{\degree}$~\citep{back_evolutionary_1996}.
+DE uses the TwoPointsDE implementation from the nevergrad library~\citep{rapin_nevergrad_2019}.
+All three warm-start from the same initialization as the gradient run and each is run for 5 seeds with a budget of 4050 evaluations (4000 main + the 50-evaluation SA probe, matched across methods), picking the best out of each run.
 
 \begin{table}[!htb]
 \centering
-\caption{Final hard metrics on the Walker recovery testbed. The gradient pipeline recovers the Walker reference exactly in 1000 iterations; the three black-box baselines plateau well short of it even with roughly four times the evaluation budget and best-of-5 seed selection.}
+\caption{Final hard metrics on the Walker recovery testbed. The gradient pipeline recovers the Walker reference exactly within 1000 iterations; the three black-box baselines plateau well short of it even with roughly four times the evaluation budget and best-of-5 seed selection.}
 \label{tab:baselines}
 \input{tables/baselines.tex}
 \end{table}
 
-\figref{fig:baselines_conv} plots convergence for the best-fitness seed of each method against function evaluations. The differentiable pipeline reaches Walker within ${\sim}750$ evaluations; GA plateaus at \SI{60.3}{\minute} revisit, DE at \SI{68.5}{\minute}, and SA at \SI{73.9}{\minute}, none within \SI{12}{\minute} of Walker even at four times the budget.
-GA's edge over DE on this problem is attributable to its uniform crossover and $\bmod\,\SI{360}{\degree}$ wrap, which respect the cyclic nature of RAAN and mean anomaly; DE's Euclidean-space perturbations do not.\footnote{The nevergrad NGOpt meta-selector chooses CMA-ES with box constraints at this budget and dimension; we found it plateaus earlier than TwoPointsDE and report the stronger of the two.}
+\figref{fig:baselines_conv} plots convergence for the best-fitness seed of each method against function evaluations. The gradient-based method reaches Walker-Delta metrics within ${\sim}750$ evaluations; GA plateaus at \SI{60.3}{\minute} revisit, DE at \SI{68.5}{\minute}, and SA at \SI{73.9}{\minute}, none getting close to Walker-Delta even at four times the computational budget.
+GA's edge over DE on this problem is attributable to its uniform crossover and $\bmod\,\SI{360}{\degree}$ wrap, which respect the cyclic nature of RAAN and mean anomaly; DE's Euclidean-space perturbations do not.
 
 \begin{figure}[!htb]
     \centering
@@ -211,12 +211,11 @@ GA's edge over DE on this problem is attributable to its uniform crossover and $
     \label{fig:baselines_conv}
 \end{figure}
 
+\newpage
 \subsection{Ablations}
 \label{sec:ablations}
 
-To isolate the design choices behind the relaxed pipeline, we re-run the Walker recovery testbed of \secref{sec:uniform} (24 satellites, $6 \times 4$, inclination fixed at \SI{60}{\degree}, RAAN and mean anomaly free, irregular RAAN init, 1000 iterations) under five controlled perturbations.
-Constellation, ground grid, propagation horizon, and optimizer are held fixed; only the ablated knob varies.
-Each row of \tabref{tab:ablations} reports the final hard coverage and mean worst-case revisit; the Walker 24/6/1 reference is included for calibration.
+To isolate the design choices behind the relaxed pipeline, we re-run the Walker recovery testbed of \secref{sec:uniform} under five controlled perturbations. Each row of \tabref{tab:ablations} reports the final hard coverage and mean worst-case revisit; the Walker 24/6/1 and results from \secref{sec:uniform} are included for calibration.
 
 \begin{table}[!htb]
 \centering
@@ -226,30 +225,27 @@ Each row of \tabref{tab:ablations} reports the final hard coverage and mean wors
 \end{table}
 
 \paragraph{(a) Loss composition.}
-Coverage-only preserves Walker-level coverage (\SI{40.8}{\percent}) but leaves revisit at \SI{126.7}{\minute}---over \SI{2.6}{\times} the Walker baseline---because the loss never penalizes long gaps.
-In contrast, revisit-only and the full combined loss both converge to the Walker-equivalent solution (\SI{40.3}{\percent} coverage, \SI{48.0}{\minute} revisit): once satellites are spaced to minimize revisit, the coverage term contributes only a small residual gradient, so the two are effectively equivalent on this testbed.
-The combined form remains load-bearing on problems where clustering is a valid local minimum of the revisit objective (\secref{sec:weighted}); here it confirms that adding the coverage term does no harm.
+Coverage-only surpasses Walker-level coverage (\SI{40.76}{\percent} vs \SI{40.34}{\percent}) but leaves revisit at \SI{126.7}{\minute}---over 2.6 times the Walker baseline---since the loss never penalizes long gaps.
+In contrast, revisit-only and the full combined loss both converge to the Walker-equivalent solution (\SI{40.34}{\percent} coverage, \SI{48.0}{\minute} revisit): once satellites are spaced to minimize revisit, the coverage term contributes only a small residual gradient, so the two are effectively equivalent on this testbed.
 
 \paragraph{(b) Sigmoid temperature.}
 We compare the default $\tau = \SI{2}{\degree}$ (shared between coverage and revisit branches) against two variants with decoupled coverage and revisit temperatures: ($\tau_{\text{cov}} = \SI{3}{\degree}$, $\tau_{\text{rev}} = \SI{1}{\degree}$) and the inverse ($\tau_{\text{cov}} = \SI{1}{\degree}$, $\tau_{\text{rev}} = \SI{3}{\degree}$). The shared setting recovers Walker (\SI{40.3}{\percent}, \SI{48.0}{\minute}); the two decoupled variants underperform (\SI{39.0}{\percent} / \SI{54.9}{\minute} and \SI{40.1}{\percent} / \SI{58.3}{\minute}). Shared $\tau$ is the default for all other experiments.
 
 \paragraph{(c) Revisit weight $\lambda$.}
 Sweeping $\lambda \in \{0.01, 0.1, 1.0\}$ shows that results are insensitive to $\lambda$ over two orders of magnitude: both $\lambda = 0.1$ and $\lambda = 1.0$ recover Walker (\SI{40.3}{\percent}, \SI{48.0}{\minute}).
-Under-weighting revisit at $\lambda = 0.01$ lets coverage saturate before the revisit gradient does useful work (\SI{40.1}{\percent}, \SI{59.8}{\minute}).
-$\lambda = 0.1$ is a natural default; the test suggests a broad plateau around it rather than a sharp optimum.
+Under-weighting revisit at $\lambda = 0.01$ lets coverage saturate before the revisit gradient does useful work (\SI{40.1}{\percent}, \SI{59.8}{\minute}). The ablation suggests a region of applicability rather than a sharp optimum, as similarly evidenced by ablation (a).
 
 \paragraph{(d) LogSumExp temperature $\beta$.}
-Sweeping $\beta \in \{1, 10, 100\}$ minutes exposes both ends of the sharpness/smoothness trade-off.
+Sweeping $\beta \in \{1, 10, 100\}$ minutes reveals both ends of the smoothness/correctness trade-off.
 The tight $\beta = \SI{1}{\minute}$ approaches a hard max and starves near-worst timesteps of gradient, degrading coverage to \SI{38.6}{\percent}.
 The loose $\beta = \SI{100}{\minute}$ over-smooths the worst-case signal so the optimizer underweights long gaps, raising revisit to \SI{68.9}{\minute}.
-$\beta = \SI{10}{\minute}$ sits between these failure modes and recovers Walker exactly.
+$\beta = \SI{10}{\minute}$ sits between these failure modes and recovers Walker exactly. From this ablation, it can be observed $\beta$ is likely the most sensitive hyperparameter.
 
 \paragraph{(e) Initialization sensitivity.}
-Re-running the same configuration under $n = 10$ seeds with \emph{both} RAAN and mean anomaly drawn uniformly at random yields hard coverage in $[38.8, 40.3]\,\%$ and revisit in $[47.8, 64.1]$~min, with mean $39.7 \pm 0.5\,\%$ and $61.7 \pm 4.7$~min.
+Re-running the same configuration under $n = 10$ seeds with both RAAN and mean anomaly drawn uniformly at random yields hard coverage in $[38.8, 40.3]\,\%$ and revisit in $[47.8, 64.1]$~min, with mean $39.7 \pm 0.5\,\%$ and $61.7 \pm 4.7$~min.
 Only one of the ten seeds recovers Walker exactly; the other nine converge to a worse local minimum near \SI{63}{\minute} revisit while still reaching roughly Walker-level coverage.
-This bimodality is consistent with the multi-modal structure visible in \figref{fig:landscape}: coverage drives satellites apart to near-uniform angular spacing reliably, but the finer-grained plane-phasing that distinguishes the global Walker minimum from nearby local minima is not always found from arbitrary RAAN+MA initializations.
-The result of \secref{sec:uniform} is therefore not guaranteed from every initialization, but remains robustly reachable when RAAN is seeded near a Walker-like spacing (as in all preceding experiments).
-A simple best-of-$n$ multi-start ensemble recovers Walker exactly here (seed 5: \SI{40.3}{\percent}, \SI{47.8}{\minute}), so the multi-modality can be mitigated at low cost given parallel runs.
+This finding is consistent with the multi-modal structure visible in \figref{fig:landscape}: coverage drives satellites apart to near-uniform angular spacing reliably, but the finer-grained plane-phasing that distinguishes the global Walker minimum from nearby local minima is not always found from arbitrary RAAN+MA initializations.
+The result of \secref{sec:uniform} is therefore not guaranteed from every initialization, but remains robustly reachable with correct choice of initialization, and can be mitigated with parallel runs.
 
 \begin{figure}[!htb]
     \centering
@@ -278,21 +274,19 @@ A simple best-of-$n$ multi-start ensemble recovers Walker exactly here (seed 5: 
         \includegraphics[width=\textwidth]{figures/ablations_beta_coverage.pdf}\\[-2pt]
         {\small (f) LSE temperature $\beta$: coverage}
     \end{minipage}
-    \caption{Hard metrics over training for the three multi-variant ablations; Walker 24/6/1 reference dashed. Top row: mean worst-case revisit. Bottom row: coverage. \textbf{(a, d)} Coverage-only flattens coverage near Walker immediately but never reduces revisit; revisit-only and combined both converge to the Walker solution. \textbf{(b, e)} $\lambda = 0.1$ and $\lambda = 1.0$ are indistinguishable on this testbed; $\lambda = 0.01$ plateaus early on revisit. \textbf{(c, f)} $\beta = \SI{10}{\minute}$ converges cleanly; $\beta = \SI{1}{\minute}$ is gradient-starved on revisit and leaves coverage short; $\beta = \SI{100}{\minute}$ over-smooths and gets stuck at a worse revisit minimum.}
+    \caption{Hard metrics over training for the three multi-variant ablations; Walker 24/6/1 reference dashed. \textbf{Top row:} mean worst-case revisit. \textbf{Bottom row:} coverage. \textbf{(a, d)} Coverage-only flattens coverage and surpasses Walker, but never reduces revisit; revisit-only and combined both converge to the Walker solution. \textbf{(b, e)} $\lambda = 0.1$ and $\lambda = 1.0$ are indistinguishable on this testbed; $\lambda = 0.01$ plateaus early on revisit. \textbf{(c, f)} $\beta = \SI{10}{\minute}$ converges to Walker solution; $\beta = \SI{1}{\minute}$ is gradient-starved on revisit and leaves coverage short; $\beta = \SI{100}{\minute}$ over-smooths and gets stuck at a worse revisit minimum.}
     \label{fig:ablations_conv}
 \end{figure}
 
 \subsection{Computational Cost and Scalability}
 \label{sec:cost}
 
-We report cost in terms of evaluations (forward passes) and iterations (forward + backward passes) rather than wall-clock, since raw timings depend heavily on hardware, parallelism, and SGP4 implementation choices that are orthogonal to the method.
-The per-step cost of the differentiable pipeline scales as $\mathcal{O}(NKJ)$---linear in satellite count $N$, time steps $K$, and ground targets $J$---with the backward pass a small constant multiple of the forward pass (reverse-mode autograd through $\partial$SGP4 and the relaxations, no Hessian-vector products).
+We report computational cost in terms of evaluations (forward passes) and iterations (forward + backward passes). The per-step cost of the differentiable pipeline scales as $\mathcal{O}(NKJ)$---linear in satellite count $N$, time steps $K$, and ground targets $J$---with the backward pass a small constant multiple of the forward pass encompassing autograd through $\partial$SGP4.
 A single forward pass of our pipeline is a constant factor cheaper than one STK orbit simulation used in prior work~\citep{paek_optimization_2019}, since $\partial$SGP4 is a pure-PyTorch reimplementation of SGP4 rather than a full high-fidelity simulator.
 
 \paragraph{Information per step.}
 Each gradient step returns an $N_{\text{dof}}$-dimensional descent direction via autodiff (30-dimensional on Exp 2, 12-dimensional on Exp 3), whereas each black-box evaluation returns a single scalar.
 At a per-step cost roughly an order of magnitude larger than a forward-only evaluation, the gradient pipeline delivers $N_{\text{dof}}$ signals per evaluation-equivalent. This is the regime in which gradient methods beat dimension-agnostic heuristics: empirically, the pipeline reaches the Walker reference within ${\sim}750$ iterations (\figref{fig:baselines_conv}), while SA/GA/DE plateau \SI{12}{\minute}--\SI{26}{\minute} worse on revisit even at ${\sim}4\times$ the evaluation budget (\tabref{tab:baselines}).
 
-\paragraph{Batching and parallelism.}
-Neither the forward nor backward pass contains serial dependencies across satellites or ground points, so the full $\mathcal{O}(NKJ)$ tensor computation is amenable to GPU batching; ensembles of optimizer trajectories (multi-start from different initializations) parallelize trivially across the independent-seed dimension.
-Neither is exploited in the experiments reported here, but both would lower the effective per-iteration cost for larger constellations or multi-start ensembles.
+\paragraph{Scaling to larger problems.}
+The problem sizes in this paper fit comfortably on a single GPU. Much larger constellations (hundreds to thousands of satellites) would admit satellite-wise sharding across devices with data-parallel strategies, and multi-start ensembles across initializations parallelize trivially across the independent-seed dimension.

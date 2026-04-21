@@ -27,13 +27,8 @@ Hyperparam tuning     & 24 & 30 & 2592 & 2.0 & 2.0 & 10 & 0.1 \\
 
 This appendix provides the complete experimental setup and raw results for hyperparameter tuning described in \secref{sec:tightness}.
 
-\paragraph{Constellation configuration.}
-The tuning uses a 24-satellite constellation ($6 \times 4$) at \SI{550}{\kilo\metre} altitude with eccentricity $\approx 0$, inclination fixed at \SI{60}{\degree}, and RAAN and mean anomaly as free parameters.
-RAAN is shared within each plane, giving 30 effective degrees of freedom (6 unique RAANs + 24 mean anomalies).
-
-\paragraph{Optimization settings.}
-Each of the four initial configurations is optimized for 800 iterations with AdamW ($\eta = 10^{-2}$), propagation over \SI{24}{\hour} discretized into $K = 240$ time steps, a ground grid of $36 \times 72 = 2592$ points spanning $\pm$\SI{70}{\degree} latitude with $\cos(\text{lat})$ area weights, minimum elevation $\alpha_{\min} = \SI{10}{\degree}$, sigmoid temperature $\tau = \SI{2}{\degree}$, LogSumExp temperature $\beta = \SI{10}{\minute}$, revisit weight $\lambda = 0.1$, mean revisit reduction, and GMST randomization enabled.
-The optimization uses the \emph{default} relaxation parameters, not the calibrated ones---the goal is to obtain four diverse final solutions whose relative quality is known from the hard metrics.
+\paragraph{Setup.}
+The tuning uses the same 24-satellite setup as \secref{sec:uniform} (see \tabref{tab:exp_params}), run for 800 iterations per initial configuration with shared $\tau = \SI{2}{\degree}$ and GMST randomization enabled. These runs use the \emph{default} relaxation parameters, not the calibrated ones---the goal is to obtain four diverse final solutions whose relative quality is known from the hard metrics.
 
 \paragraph{Initial RAAN configurations.}
 The four configurations are: near-uniform $[0, 60, 120, 180, 240, 300]$\SI{}{\degree}, moderate $[0, 30, 120, 200, 210, 300]$\SI{}{\degree}, clustered $[0, 10, 20, 30, 40, 50]$\SI{}{\degree}, and two-cluster $[0, 5, 180, 185, 270, 275]$\SI{}{\degree}.
@@ -55,11 +50,10 @@ Among valid combinations, we utilize the one that maximizes $\tau_{\text{cov}}$ 
 \paragraph{Reproducibility.}
 All experiments can be reproduced from the repository found at \url{https://github.com/shreeyam/differentiable_eo}.
 
-\section{Equivalences among candidate relaxations}
+\section{Relaxation Equivalences}
 \label{app:alternatives}
 
-Several natural alternatives to R1, R2, and R4 reduce \emph{exactly} to the chosen relaxations up to reparameterisation or additive constants.
-We record these identities because they explain why swapping in the alternative would not produce different optimizer dynamics.
+Several natural alternatives to R1, R2, and R4 reduce to the chosen relaxations up to reparameterisation or additive constants. Hence,wapping in the alternatives would not produce different optimizer dynamics.
 
 \subsection{R1: tanh is a rescaled sigmoid}
 
@@ -73,11 +67,11 @@ For any $x \in \mathbb{R}$,
     \label{eq:tanh_sigmoid}
 \end{equation}
 so the rescaled tanh $\bigl(1 + \tanh((\alpha_{ij} - \alpha_{\min})/(2\tau))\bigr)/2$ is pointwise identical to the sigmoid in \eqref{eq:soft_visibility}.
-Gradients, level sets, and every downstream quantity are unchanged.
+Gradients, level sets, and every downstream quantity are therefore identical.
 
 \subsection{R2: Noisy-OR is the probabilistic t-conorm}
 
-In fuzzy logic the \emph{probabilistic t-conorm}~\citep{klement_triangular_2000} of $n$ values $\{x_i\} \subset [0,1]$ is defined as $1 - \prod_i (1 - x_i)$, which is exactly the noisy-OR of \eqref{eq:noisy_or}.
+The probabilistic t-conorm~\citep{klement_triangular_2000} of $n$ values $\{x_i\} \subset [0,1]$ is defined as $1 - \prod_i (1 - x_i)$, which is exactly the noisy-OR of \eqref{eq:noisy_or}.
 Equivalently, if $\tilde{c}_{ij}(t_k)$ is interpreted as the independent detection probability of satellite $i$ at target $j$, then
 \begin{equation}
     \Pr\!\left[\bigcup_i \text{sat } i \text{ covers } j\right]
@@ -89,8 +83,7 @@ No separate relaxation is needed: the noisy-OR operator is the unique member of 
 
 \subsection{R4: Mellowmax differs from LogSumExp by an additive constant}
 
-The mellowmax operator was introduced by \citet{asadi_alternative_2017} as an alternative to the Boltzmann softmax used for value aggregation in $Q$-learning, where it restores a non-expansion property Boltzmann softmax lacks.
-Despite the motivation, mellowmax is itself an instance of LogSumExp up to an additive constant:
+The mellowmax operator is introduced by \citet{asadi_alternative_2017} as an alternative to the Boltzmann softmax used for value aggregation in $Q$-learning, where it restores a non-expansion property Boltzmann softmax lacks. Mellowmax is equivalent to LogSumExp up to an additive constant:
 \begin{equation}
     \operatorname{mm}_{\omega}(X)
     \;=\; \frac{1}{\omega}\log\!\left(\frac{1}{K}\sum_{k=1}^{K} e^{\omega x_k}\right).
@@ -103,5 +96,4 @@ Setting $\omega = 1/\beta$ and expanding the $1/K$ factor gives
     = \logsumexp_\beta(X) - \beta \log K,
     \label{eq:mellowmax_to_lse}
 \end{equation}
-so the two differ by the constant $\beta \log K$.
-Since gradients are invariant under additive constants, the optimizer sees identical dynamics; using mellowmax here would be a relabeling of LogSumExp rather than a different relaxation.
+so the two differ by the constant $\beta \log K$. Hence, the optimizer sees identical dynamics under mellowmax.
