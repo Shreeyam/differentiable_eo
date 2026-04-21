@@ -189,7 +189,7 @@ The LogSumExp adds a further upward bias of at most $\beta \log K$.
 These effects compete: phantom coverage shortens gaps near the visibility boundary, while incomplete resets and the LogSumExp lengthen them.
 The net bias depends on the specific geometry and is neither a guaranteed upper nor lower bound on the true objective.
 
-The split sigmoid temperatures introduced in \secref{sec:logsumexp} provide a parameter for tuning this effect. Under a shared $\tau$, phantom coverage from clustered below-threshold satellites compounds through the noisy-OR and partially resets the leaky integrator, so the relaxed loss can rank clustered solutions above well-spread ones at the same hard metric. A grid search (Appendix~\ref{app:hyperparam_grid}) shows that $\tau_{\text{cov}} \gg \tau_{\text{rev}}$ restores the correct ordering of converged solutions while keeping smooth coverage gradients. However, competes with optimizability: ablation (b) in \secref{sec:ablations} finds that from a reasonable initialization, shared $\tau$ converges better than either split variant we tried. We therefore use shared $\tau$ in all experiments noting that certain problems may benefit from separated temperatures.
+The split sigmoid temperatures introduced in \secref{sec:logsumexp} provide a parameter for tuning this effect. Under a shared $\tau$, phantom coverage from clustered below-threshold satellites compounds through the noisy-OR and partially resets the leaky integrator, so the relaxed loss can rank clustered solutions above well-spread ones at the same hard metric. A grid search (Appendix~\ref{app:hyperparam_grid}) shows that $\tau_{\text{cov}} \gg \tau_{\text{rev}}$ restores the correct ordering of converged solutions while keeping smooth coverage gradients. However, this competes with optimization performance: ablation (b) in \secref{sec:ablations} finds that from a reasonable initialization, shared $\tau$ converges better than either split variant we tried. We therefore use shared $\tau$ in all experiments noting that certain problems may benefit from separated temperatures.
 
 \subsection{Optimization}
 \label{sec:optimization}
@@ -221,7 +221,7 @@ The Jacobian $\partial \vect{r}_i^{\text{TEME}} / \partial \vect{x}_i$ is handle
 
 \paragraph{Interval constraints and reparameterization.} \label{para:interval_constraints}
 
-Without constraints, the optimizer trivially raises altitude until all ground points within range are visible. We enforce interval constraints (e.g.\ LEO altitude bounds) via sigmoid reparameterization, mapping unconstrained variables $\vect{\theta}_i$ to valid elements $\vect{x}_i$:
+Without constraints, the optimizer trivially raises altitude until the satellite footprint covers the full ground grid. We enforce interval constraints (e.g.\ LEO altitude bounds) via sigmoid reparameterization, mapping unconstrained variables $\vect{\theta}_i$ to valid elements $\vect{x}_i$:
 \begin{equation}
     x_d = \ell_d + (u_d - \ell_d) \, \sigma(\theta_d) \quad \Rightarrow \quad \frac{\partial x_d}{\partial \theta_d} = (u_d - \ell_d) \, \sigma(\theta_d)(1 - \sigma(\theta_d)),
     \label{eq:reparam}

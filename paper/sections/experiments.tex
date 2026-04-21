@@ -50,7 +50,7 @@ We deliberately initialize the constellation with irregular RAAN offsets $[0, 30
 
 \paragraph{Results.}
 Over 1000 iterations, the optimizer recovers near-uniform RAAN spacing from the irregular initialization, approaching the Walker-delta geometry without domain-specific inductive biases.
-The two well-spread initial planes at \SI{0}{\degree} and \SI{300}{\degree} relax outwards only slightly, while the two clustered pairs at $(30, 120)$\SI{}{\degree} and $(200, 210)$\SI{}{\degree} fan apart to fill the gaps left by the other planes, optimizing to a Walker-Delta \SI{60}{\degree} spacing up to an equivariant rotation. Metrics are summarized in 
+The two well-spread initial planes at \SI{0}{\degree} and \SI{300}{\degree} relax outwards only slightly, while the two clustered pairs at $(30, 120)$\SI{}{\degree} and $(200, 210)$\SI{}{\degree} fan apart to fill the gaps left by the other planes, optimizing to a Walker-Delta \SI{60}{\degree} spacing up to rotational symmetry about the $z$-axis. Metrics are summarized in 
 \tabref{tab:uniform_results}, and \figref{fig:convergence} shows convergence, spatial coverage redistribution, and trajectory of each satellite in RAAN/MA configuration space.
 
 \begin{table}[!htb]
@@ -88,8 +88,8 @@ Soft mean worst-case revisit [min] & 127.5 & 73.5 & 73.5 \\
 \end{figure}
 
 \paragraph{Loss landscape.}
-To investigate the structure of the loss landscape, we visualize it using per-trajectory PCA~\citep{li_visualizing_2018}: project the optimization trajectory for each of the four initializations from the hyperparameter calibration (Appendix~\ref{app:hyperparam_grid}) onto its two principal components and evaluating the loss on that 2D slice.
-Within each slice, the relaxed and hard landscapes agree up to smoothing in every case, confirming the relaxations preserve local basin structure. The optimizer descends cleanly: the near-uniform and moderate initializations descend into the same low-loss region, while the two clustered starts land in local minima.
+To investigate the structure of the loss landscape, we visualize it using per-trajectory PCA~\citep{li_visualizing_2018}: projecting the optimization trajectory for each of the four initializations from the hyperparameter calibration (Appendix~\ref{app:hyperparam_grid}) onto its two principal components and evaluating the loss on that 2D slice.
+Within each slice, the relaxed and hard landscapes agree up to smoothing in every case, confirming the relaxations preserve local basin structure. The optimizer descends cleanly: the near-uniform and moderate initializations land in the same low-loss region, while the two clustered starts settle into separate local minima.
 The global slice reveals the multi-modal structure of the loss landscape, on a more zoomed out scale than any single PCA slice exposes, with many local minima, and significantly distorted from the hard metric structure.
 The smooth local structure means gradient descent is well-conditioned from any start, but initialization determines which local minima the optimizer will descend to, motivating the multi-start ensemble in Ablation~(e) (\secref{sec:ablations}) and framing the Walker recovery of \tabref{tab:uniform_results} as representative of the well-spread-init basin rather than a unilateral guarantee.
 
@@ -215,7 +215,7 @@ GA's edge over DE on this problem is attributable to its uniform crossover and $
 \subsection{Ablations}
 \label{sec:ablations}
 
-To isolate the design choices behind the relaxed pipeline, we re-run the Walker recovery testbed of \secref{sec:uniform} under five controlled perturbations. Each row of \tabref{tab:ablations} reports the final hard coverage and mean worst-case revisit; the Walker 24/6/1 and results from \secref{sec:uniform} are included for calibration.
+To isolate the design choices behind the relaxed pipeline, we re-run the Walker recovery testbed of \secref{sec:uniform} under five controlled perturbations. Each row of \tabref{tab:ablations} reports the final hard coverage and mean worst-case revisit; the Walker 24/6/1 reference and results from \secref{sec:uniform} are included for calibration.
 
 \begin{table}[!htb]
 \centering
@@ -281,7 +281,7 @@ The result of \secref{sec:uniform} is therefore not guaranteed from every initia
 \subsection{Computational Cost and Scalability}
 \label{sec:cost}
 
-We report computational cost in terms of evaluations (forward passes) and iterations (forward + backward passes). The per-step cost of the differentiable pipeline scales as $\mathcal{O}(NKJ)$---linear in satellite count $N$, time steps $K$, and ground targets $J$---with the backward pass a small constant multiple of the forward pass encompassing autograd through $\partial$SGP4.
+We report computational cost in terms of evaluations (forward passes) and iterations (forward + backward passes). The per-step cost of the differentiable pipeline scales as $\mathcal{O}(NKJ)$---linear in satellite count $N$, time steps $K$, and ground targets $J$---with the backward pass a small constant multiple of the forward pass.
 A single forward pass of our pipeline is a constant factor cheaper than one STK orbit simulation used in prior work~\citep{paek_optimization_2019}, since $\partial$SGP4 is a pure-PyTorch reimplementation of SGP4 rather than a full high-fidelity simulator.
 
 \paragraph{Information per step.}

@@ -53,9 +53,9 @@ All experiments can be reproduced from the repository found at \url{https://gith
 \section{Relaxation Equivalences}
 \label{app:alternatives}
 
-Several natural alternatives to R1, R2, and R4 reduce to the chosen relaxations up to reparameterisation or additive constants. Hence,wapping in the alternatives would not produce different optimizer dynamics.
+Several natural alternatives to R1, R2, and R4 reduce to the chosen relaxations up to reparameterization or additive constants. Hence, swapping in the alternatives would not produce different optimizer dynamics.
 
-\subsection{R1: tanh is a rescaled sigmoid}
+\subsection{R1: tanh $\Leftrightarrow$ sigmoid}
 
 For any $x \in \mathbb{R}$,
 \begin{equation}
@@ -69,7 +69,7 @@ For any $x \in \mathbb{R}$,
 so the rescaled tanh $\bigl(1 + \tanh((\alpha_{ij} - \alpha_{\min})/(2\tau))\bigr)/2$ is pointwise identical to the sigmoid in \eqref{eq:soft_visibility}.
 Gradients, level sets, and every downstream quantity are therefore identical.
 
-\subsection{R2: Noisy-OR is the probabilistic t-conorm}
+\subsection{R2: Noisy-OR $\Leftrightarrow$ probabilistic t-conorm}
 
 The probabilistic t-conorm~\citep{klement_triangular_2000} of $n$ values $\{x_i\} \subset [0,1]$ is defined as $1 - \prod_i (1 - x_i)$, which is exactly the noisy-OR of \eqref{eq:noisy_or}.
 Equivalently, if $\tilde{c}_{ij}(t_k)$ is interpreted as the independent detection probability of satellite $i$ at target $j$, then
@@ -81,7 +81,7 @@ Equivalently, if $\tilde{c}_{ij}(t_k)$ is interpreted as the independent detecti
 \end{equation}
 No separate relaxation is needed: the noisy-OR operator is the unique member of the probabilistic t-conorm family that is smooth, bounded in $[0,1]$, and strictly increasing in each argument.
 
-\subsection{R4: Mellowmax differs from LogSumExp by an additive constant}
+\subsection{R4: Mellowmax $\Leftrightarrow$ LogSumExp + constant}
 
 The mellowmax operator is introduced by \citet{asadi_alternative_2017} as an alternative to the Boltzmann softmax used for value aggregation in $Q$-learning, where it restores a non-expansion property Boltzmann softmax lacks. Mellowmax is equivalent to LogSumExp up to an additive constant:
 \begin{equation}
