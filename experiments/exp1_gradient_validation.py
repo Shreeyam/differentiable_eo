@@ -93,8 +93,8 @@ def main():
     MIN_EL = 10.0
     PROP_HOURS = 24.0
 
-    # Relaxation hyperparams (matching exp3)
-    SOFTNESS = 5.0
+    # Relaxation hyperparams (shared tau to match Exp 2 / Exp 3 default)
+    SOFTNESS = 2.0
     REVISIT_SOFTNESS = 2.0
     REVISIT_TAU = 10.0
     REVISIT_WEIGHT = 2.0
